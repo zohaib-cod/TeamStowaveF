@@ -1,0 +1,395 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Dancing+Script:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  --font-script: 'Dancing Script', cursive;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Stowave Apple-Inspired Liquid Frosted Glass Theme - High Contrast & Deep Visible Blur */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-card-hover: rgba(255, 255, 255, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.65);
+  --bg-input: rgba(255, 255, 255, 0.95);
+
+  --border-subtle: rgba(203, 213, 225, 0.95);
+  --border-glass: rgba(255, 255, 255, 0.95);
+  --border-focus: rgba(225, 29, 72, 0.7);
+  --border-glow: rgba(225, 29, 72, 0.3);
+
+  /* Deep Pitch-Black High-Contrast Typography (Zero Washed Out Text) */
+  --text-primary: #000000;
+  --text-secondary: #0f172a;
+  --text-muted: #1e293b;
+  --text-accent: #be123c;
+
+  /* Stowave Brand Accents */
+  --primary: #e11d48;
+  --primary-hover: #be123c;
+  --primary-glow: rgba(225, 29, 72, 0.35);
+
+  --secondary: #090d16;
+  --cyan: #0284c7;
+  --emerald: #059669;
+  --amber: #d97706;
+  --rose: #e11d48;
+  --purple: #7c3aed;
+
+  /* Apple Liquid Glass Shadows & Specular Ring */
+  --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 16px 40px -8px rgba(15, 23, 42, 0.08), 0 0 0 1.5px rgba(255, 255, 255, 0.95) inset;
+  --shadow-lg: 0 24px 55px -12px rgba(15, 23, 42, 0.12), 0 0 0 1.5px rgba(255, 255, 255, 0.95) inset;
+  --shadow-glow: 0 0 35px rgba(225, 29, 72, 0.28);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
+  background-color: #e6ecf4;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  /* Multi-color rich ambient liquid mesh behind frosted glass - vivid colors for deep visible blur refraction */
+  background-image: 
+    radial-gradient(circle at 8% 8%, rgba(225, 29, 72, 0.38) 0%, transparent 48%),
+    radial-gradient(circle at 92% 10%, rgba(2, 132, 199, 0.40) 0%, transparent 52%),
+    radial-gradient(circle at 48% 35%, rgba(124, 58, 237, 0.30) 0%, transparent 45%),
+    radial-gradient(circle at 88% 70%, rgba(5, 150, 105, 0.32) 0%, transparent 48%),
+    radial-gradient(circle at 12% 82%, rgba(225, 29, 72, 0.36) 0%, transparent 52%),
+    radial-gradient(circle at 55% 92%, rgba(245, 158, 11, 0.28) 0%, transparent 45%);
+  background-attachment: fixed;
+}
+
+/* Global High-Contrast Typography - Crystal Clear and Legible */
+h1, h2, h3, h4, h5, h6 {
+  color: #000000 !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.025em;
+}
+
+p {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+label {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+strong, b {
+  color: #000000 !important;
+  font-weight: 850 !important;
+}
+
+/* Ensure subtext is never washed out or soft */
+.text-muted, [class*="text-muted"], .sub-text, .text-secondary {
+  color: #0f172a !important;
+  font-weight: 650 !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(203, 213, 225, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.6);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* iOS Liquid Glass Panel Utility with High Contrast and Deep Frosted Blur */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.74) !important;
+  backdrop-filter: blur(28px) saturate(210%) contrast(102%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(210%) contrast(102%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.12), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(0, 0, 0, 0.04) !important;
+  transition: all var(--transition-normal);
+}
+
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 1) !important;
+  transform: translateY(-2px);
+}
+
+.glass-panel-glow {
+  box-shadow: var(--shadow-glow), var(--shadow-md);
+}
+
+/* Floating Orb Animations for Apple Liquid Depth */
+@keyframes floatOrb {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(30px, 45px) scale(1.08); }
+  100% { transform: translate(-25px, 20px) scale(0.96); }
+}
+
+@keyframes floatOrbReverse {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-35px, -40px) scale(1.06); }
+  100% { transform: translate(25px, -20px) scale(0.97); }
+}
+
+/* Buttons - iOS Style Soft High-Contrast Pills */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-weight: 750;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.38);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+  box-shadow: 0 6px 22px rgba(225, 29, 72, 0.48);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(203, 213, 225, 1);
+  color: #000000;
+  font-weight: 750;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.btn-secondary:hover {
+  background: #ffffff;
+  border-color: #0f172a;
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.btn-emerald {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-weight: 750;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+
+.btn-emerald:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+}
+
+.btn-rose {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  color: #ffffff;
+  font-weight: 750;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+}
+
+.btn-rose:hover {
+  background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  padding: 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px solid var(--border-subtle);
+  color: #000000;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+  background: #ffffff;
+  color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* Badges - Apple Saturated Frosted Pills with High Contrast Text */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+}
+
+.badge-urgent {
+  background: rgba(225, 29, 72, 0.16);
+  color: #9f1239;
+  border: 1.5px solid rgba(225, 29, 72, 0.5);
+}
+
+.badge-high {
+  background: rgba(217, 119, 6, 0.16);
+  color: #92400e;
+  border: 1.5px solid rgba(217, 119, 6, 0.5);
+}
+
+.badge-medium {
+  background: rgba(2, 132, 199, 0.16);
+  color: #075985;
+  border: 1.5px solid rgba(2, 132, 199, 0.5);
+}
+
+.badge-low {
+  background: rgba(15, 23, 42, 0.12);
+  color: #000000;
+  border: 1.5px solid rgba(15, 23, 42, 0.4);
+}
+
+.badge-completed {
+  background: rgba(5, 150, 105, 0.16);
+  color: #064e3b;
+  border: 1.5px solid rgba(5, 150, 105, 0.5);
+}
+
+.badge-progress {
+  background: rgba(2, 132, 199, 0.16);
+  color: #075985;
+  border: 1.5px solid rgba(2, 132, 199, 0.5);
+}
+
+.badge-review {
+  background: rgba(124, 58, 237, 0.16);
+  color: #4c1d95;
+  border: 1.5px solid rgba(124, 58, 237, 0.5);
+}
+
+/* Inputs - Crisp Clean Glass with Pitch Black Input Text */
+.input-field, .textarea-field, .select-field {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1.5px solid rgba(148, 163, 184, 0.75);
+  border-radius: var(--radius-md);
+  padding: 11px 16px;
+  color: #000000 !important;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  transition: all var(--transition-fast);
+  outline: none;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.input-field::placeholder, .textarea-field::placeholder {
+  color: #334155;
+  font-weight: 550;
+}
+
+.input-field:focus, .textarea-field:focus, .select-field:focus {
+  border-color: var(--border-focus);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--border-glow), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.input-label {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: #000000;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* Modal Overlay - iOS Deep Frosted Glass */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(40px) saturate(210%);
+  -webkit-backdrop-filter: blur(40px) saturate(210%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #000000;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Pulse indicator */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 8px #059669;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(5, 150, 105, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+}

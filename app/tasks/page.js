@@ -56,14 +56,19 @@ export default function TasksPage() {
 
   const handleSubmitWork = async (taskId, submissionData) => {
     try {
-      await fetch(`/api/tasks/${taskId}/submit`, {
+      const res = await fetch(`/api/tasks/${taskId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData)
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Submission failed. Please try again.');
+      }
       loadTasksData();
     } catch (err) {
       console.error(err);
+      alert('Network error submitting task.');
     }
   };
 
@@ -74,12 +79,16 @@ export default function TasksPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...reviewData, reviewerId: currentUser?.id })
       });
-      if (res.ok && reviewData.status === 'completed') {
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Review action failed. Please ensure you are logged in as an Administrator.');
+      } else if (reviewData.status === 'completed') {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
       }
       loadTasksData();
     } catch (err) {
       console.error(err);
+      alert('Network error reviewing task.');
     }
   };
 

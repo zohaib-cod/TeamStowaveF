@@ -28,7 +28,7 @@ export default function AiAssistantDrawer({
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Salam **${currentUser?.name?.split(' ')[0] || 'Executive'}**! I am your Stowave AI Strategic Advisor.\n\nI have complete real-time access to our company's team metrics, ${tasks.length} active tasks, standup reports, social command center, and feedback pulses.\n\nHow can I empower your leadership today? You can **speak to me via voice**, **turn on your live camera to show documents/code**, or **ask for real-time market trends**!`
+      content: `Salam **${currentUser?.name?.split(' ')[0] || 'Executive'}**! I am your Stowave AI Strategic Advisor.\n\nI have complete real-time access to our company's team metrics, ${tasks?.length || 0} active tasks, standup reports, social command center, and feedback pulses.\n\nHow can I empower your leadership today? You can **speak to me via voice**, **turn on your live camera to show documents/code**, or **ask for real-time market trends**!`
     }
   ]);
   const [inputText, setInputText] = useState('');
@@ -43,6 +43,8 @@ export default function AiAssistantDrawer({
 
   // Camera / Vision state
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -54,6 +56,43 @@ export default function AiAssistantDrawer({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // Callback ref to attach stream as soon as video DOM element mounts
+  const handleVideoRef = (element) => {
+    videoRef.current = element;
+    if (element && streamRef.current) {
+      try {
+        if (element.srcObject !== streamRef.current) {
+          element.srcObject = streamRef.current;
+        }
+        element.play().catch(e => console.warn('Video auto-play handled:', e));
+      } catch (err) {
+        console.warn('handleVideoRef error:', err);
+      }
+    }
+  };
+
+  // Synchronize stream if isCameraActive changes
+  useEffect(() => {
+    if (isCameraActive && streamRef.current && videoRef.current) {
+      try {
+        if (videoRef.current.srcObject !== streamRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+        }
+        videoRef.current.play().catch(e => console.warn('Video play sync handled:', e));
+      } catch (err) {
+        console.warn('useEffect camera sync error:', err);
+      }
+    }
+  }, [isCameraActive]);
+
+  // Cleanup camera stream on drawer close or unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+      stopSpeaking();
+    };
+  }, []);
 
   // Initialize Speech Recognition if supported
   useEffect(() => {
@@ -116,30 +155,47 @@ export default function AiAssistantDrawer({
     }
   };
 
-  // Toggle Camera
+  // Toggle Camera with robust stream acquisition
   const startCamera = async () => {
     try {
+      setCameraError(null);
+      setCameraLoading(true);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } }
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setIsCameraActive(true);
       setCapturedImage(null);
+      setCameraLoading(false);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn('Play error:', e));
+      }
     } catch (err) {
       console.error('Camera access error:', err);
-      alert('Could not access camera. Please check camera permissions in your browser.');
+      setCameraLoading(false);
+      setCameraError(
+        err.name === 'NotAllowedError'
+          ? 'Camera permission denied. Browser ki search bar mein Camera/Lock icon par click kar k Allow karein.'
+          : `Camera connect nahi ho saka (${err.message || 'Device busy or disconnected'}).`
+      );
     }
   };
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => {
+        try { track.stop(); } catch (e) {}
+      });
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      try { videoRef.current.srcObject = null; } catch (e) {}
+    }
     setIsCameraActive(false);
+    setCameraLoading(false);
   };
 
   // Capture Snapshot from Camera
@@ -239,23 +295,44 @@ export default function AiAssistantDrawer({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      width: '100%',
-      maxWidth: '560px',
-      backgroundColor: 'rgba(255, 255, 255, 0.88)',
-      backdropFilter: 'blur(40px) saturate(210%)',
-      WebkitBackdropFilter: 'blur(40px) saturate(210%)',
-      borderLeft: '1.5px solid rgba(255, 255, 255, 0.95)',
-      boxShadow: '-15px 0 50px rgba(15, 23, 42, 0.15)',
-      zIndex: 1100,
-      display: 'flex',
-      flexDirection: 'column',
-      animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-    }}>
+    <>
+      {/* Dimmed backdrop overlay */}
+      <div 
+        onClick={() => {
+          stopCamera();
+          stopSpeaking();
+          onClose();
+        }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.45)',
+          backdropFilter: 'blur(3px)',
+          zIndex: 1099,
+          animation: 'fadeIn 0.2s ease-out'
+        }}
+      />
+
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        maxWidth: '560px',
+        backgroundColor: 'rgba(255, 255, 255, 0.94)',
+        backdropFilter: 'blur(40px) saturate(210%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(210%)',
+        borderLeft: '1.5px solid rgba(255, 255, 255, 0.95)',
+        boxShadow: '-15px 0 50px rgba(15, 23, 42, 0.25)',
+        zIndex: 1100,
+        display: 'flex',
+        flexDirection: 'column',
+        animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}>
       {/* 1. Drawer Header */}
       <div style={{
         padding: '18px 24px',
@@ -378,38 +455,122 @@ export default function AiAssistantDrawer({
         </div>
       </div>
 
-      {/* 3. Live Camera Viewport (When active) */}
+      {/* 3. Live Camera Viewport (When active or error) */}
+      {cameraError && (
+        <div style={{
+          padding: '12px 18px',
+          background: 'rgba(239, 68, 68, 0.08)',
+          borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
+          color: '#b91c1c',
+          fontSize: '0.80rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+            <span>⚠️ {cameraError}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: '#ffffff',
+              border: '1.5px solid #cbd5e1',
+              color: '#0f172a',
+              fontSize: '0.76rem',
+              fontWeight: 750,
+              cursor: 'pointer'
+            }}>
+              <Upload size={13} />
+              <span>Upload Image Instead</span>
+              <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+            </label>
+            <button
+              onClick={() => { setCameraError(null); startCamera(); }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#be123c',
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              Retry Camera
+            </button>
+          </div>
+        </div>
+      )}
+
       {isCameraActive && (
         <div style={{
           padding: '16px',
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(15, 23, 42, 0.95)',
           borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: '12px'
         }}>
+          {cameraLoading && (
+            <div style={{ color: '#34d399', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>Connecting camera feed...</span>
+            </div>
+          )}
+
           <video
-            ref={videoRef}
+            ref={handleVideoRef}
             autoPlay
             playsInline
+            muted
+            onLoadedMetadata={(e) => {
+              e.target.play().catch(err => console.warn('Play on metadata loaded:', err));
+            }}
             style={{
               width: '100%',
-              maxWidth: '380px',
+              maxWidth: '420px',
+              height: 'auto',
+              minHeight: '220px',
+              background: '#020617',
               borderRadius: '12px',
               border: '2px solid #059669',
-              boxShadow: '0 0 20px rgba(5, 150, 105, 0.4)'
+              boxShadow: '0 0 25px rgba(5, 150, 105, 0.35)',
+              objectFit: 'cover'
             }}
           />
           <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-          <button
-            onClick={captureSnapshot}
-            className="btn btn-emerald"
-            style={{ padding: '8px 18px', fontSize: '0.85rem' }}
-          >
-            📸 Capture & Send to AI Vision
-          </button>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={captureSnapshot}
+              className="btn btn-emerald"
+              style={{ padding: '9px 20px', fontSize: '0.86rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              📸 Capture & Send to AI Vision
+            </button>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}>
+              <Upload size={13} />
+              <span>Or Upload File</span>
+              <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+            </label>
+          </div>
         </div>
       )}
 
@@ -592,5 +753,6 @@ export default function AiAssistantDrawer({
         </div>
       </form>
     </div>
+    </>
   );
 }

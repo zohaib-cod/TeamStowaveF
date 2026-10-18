@@ -16,7 +16,8 @@ import {
   Flame,
   ShieldCheck,
   CheckSquare,
-  FileText
+  FileText,
+  FolderKanban
 } from 'lucide-react';
 
 export default function DashboardOverview({
@@ -138,6 +139,26 @@ export default function DashboardOverview({
                 >
                   <Clock size={16} /> New Feedback Survey
                 </button>
+                <a 
+                  href="/operations"
+                  className="btn btn-secondary"
+                  id="btn-quick-department-tasks"
+                  style={{
+                    padding: '11px 20px',
+                    borderRadius: '9999px',
+                    fontSize: '0.9rem',
+                    fontWeight: 800,
+                    color: '#000000',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    border: '1.5px solid rgba(203, 213, 225, 0.95)',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <FolderKanban size={16} color="#e11d48" /> Ops Workflows
+                </a>
               </>
             ) : (
               <>
@@ -159,7 +180,12 @@ export default function DashboardOverview({
               </>
             )}
             <button 
-              onClick={onOpenAiDrawer} 
+              onClick={() => {
+                if (typeof onOpenAiDrawer === 'function') onOpenAiDrawer();
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-ai-drawer'));
+                }
+              }} 
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

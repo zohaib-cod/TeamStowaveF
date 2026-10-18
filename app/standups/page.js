@@ -18,7 +18,7 @@ export default function StandupsPage() {
       setUsers(usersRes);
 
       const savedUserId = localStorage.getItem('apex_current_user_id');
-      const activeUser = usersRes.find(u => u.id === savedUserId) || usersRes.find(u => u.role === 'admin') || usersRes[0];
+      const activeUser = usersRes.find(u => u.id === savedUserId) || null;
       setCurrentUser(activeUser);
     } catch (err) {
       console.error('Error loading reports:', err);

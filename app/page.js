@@ -39,7 +39,7 @@ export default function DashboardPage() {
       setAnnouncements(annRes);
 
       const savedUserId = localStorage.getItem('apex_current_user_id');
-      const activeUser = usersRes.find(u => u.id === savedUserId) || usersRes.find(u => u.role === 'admin') || usersRes[0];
+      const activeUser = usersRes.find(u => u.id === savedUserId);
       setCurrentUser(activeUser);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -90,6 +90,7 @@ export default function DashboardPage() {
         setCurrentTab={(tab) => {
           const routeMap = {
             tasks: '/tasks',
+            operations: '/operations',
             reports: '/standups',
             surveys: '/surveys',
             recognition: '/recognition',
@@ -100,8 +101,11 @@ export default function DashboardPage() {
         }}
         onOpenTaskModal={() => setIsTaskModalOpen(true)}
         onOpenSurveyModal={() => setIsSurveyModalOpen(true)}
-        onOpenGiftModal={() => window.location.href = '/recognition'}
-        onOpenAiDrawer={() => {}}
+        onOpenAiDrawer={() => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('open-ai-drawer'));
+          }
+        }}
       />
 
       <CreateTaskModal

@@ -10,7 +10,6 @@ import {
   Award, 
   Users, 
   Globe, 
-  Bot, 
   Sparkles, 
   Settings, 
   HelpCircle, 
@@ -18,10 +17,21 @@ import {
   AlertCircle,
   Database,
   Share2,
-  ChevronDown
+  ChevronDown,
+  FolderKanban,
+  UserPlus,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Crown
 } from 'lucide-react';
 import InteractiveTour from './InteractiveTour';
 import AiAssistantDrawer from './AiAssistantDrawer';
+import LivePresenceRadar from './LivePresenceRadar';
+import ProfileModal from './ProfileModal';
+import InviteUserModal from './InviteUserModal';
+import NotificationCenter from './NotificationCenter';
 
 export default function MainLayout({ children }) {
   const pathname = usePathname();
@@ -30,8 +40,14 @@ export default function MainLayout({ children }) {
   const [stats, setStats] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [unreadSocialCount, setUnreadSocialCount] = useState(0);
+
+  // Modals & Drawers
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [toast, setToast] = useState(null);
 
   // Check if tour should be shown on first visit
@@ -42,11 +58,25 @@ export default function MainLayout({ children }) {
       localStorage.setItem('apex_has_seen_tour', 'true');
     }
     loadSharedData();
+
+    const handleOpenAi = () => setIsAiDrawerOpen(true);
+    window.addEventListener('open-ai-drawer', handleOpenAi);
+    return () => window.removeEventListener('open-ai-drawer', handleOpenAi);
   }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleLogout = () => {
+    if (currentUser?.id && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/presence/leave', JSON.stringify({ userId: currentUser.id }));
+    }
+    localStorage.removeItem('apex_current_user_id');
+    localStorage.removeItem('apex_current_user');
+    localStorage.removeItem('stowave_auth_token');
+    window.location.href = '/login';
   };
 
   const loadSharedData = async () => {
@@ -65,16 +95,21 @@ export default function MainLayout({ children }) {
         setUnreadSocialCount(inboxRes.filter(i => i.status === 'unread').length);
       }
 
-      // Restore saved active user or default to admin
+      // Strict Authentication Verification
       const savedUserId = localStorage.getItem('apex_current_user_id');
-      if (savedUserId && usersRes.find(u => u.id === savedUserId)) {
-        setCurrentUser(usersRes.find(u => u.id === savedUserId));
-      } else if (usersRes.length > 0) {
-        const admin = usersRes.find(u => u.role === 'admin') || usersRes[0];
-        setCurrentUser(admin);
+      const activeUser = usersRes.find(u => u.id === savedUserId);
+
+      if (activeUser) {
+        setCurrentUser(activeUser);
+        setIsAuthChecking(false);
+      } else {
+        // User has not logged in or account not found! Redirect to /login
+        window.location.href = '/login';
+        return;
       }
     } catch (err) {
       console.error('Failed to load shared layout data:', err);
+      window.location.href = '/login';
     }
   };
 
@@ -84,9 +119,17 @@ export default function MainLayout({ children }) {
     showToast(`Switched active view to ${user.name} (${user.role.toUpperCase()})`);
   };
 
+  const handleUserUpdated = (updatedUser) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('apex_current_user', JSON.stringify(updatedUser));
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    showToast('Profile credentials updated successfully!');
+  };
+
   const navLinks = [
     { href: '/', label: 'Overview', icon: ShieldCheck },
     { href: '/tasks', label: 'Tasks', icon: CheckSquare, badge: stats?.activeTasks },
+    { href: '/operations', label: 'Ops Workflows', icon: FolderKanban, highlight: true },
     { href: '/social', label: 'Social Hub', icon: Share2, badge: unreadSocialCount },
     { href: '/standups', label: 'Standups', icon: FileText, badge: stats?.pendingReports },
     { href: '/surveys', label: 'Surveys', icon: Clock, badge: stats?.activeSurveysCount },
@@ -96,6 +139,41 @@ export default function MainLayout({ children }) {
     { href: '/todos', label: 'Supabase', icon: Database },
     { href: '/settings', label: 'Settings', icon: Settings }
   ];
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  if (isAuthChecking) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#e6ecf4',
+        padding: '20px'
+      }}>
+        <div style={{
+          padding: '28px 36px',
+          borderRadius: '24px',
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(36px)',
+          border: '1.5px solid rgba(255, 255, 255, 0.95)',
+          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.08)',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <img src="/stowave-logo-transparent.png" alt="Stowave" style={{ height: '32px', width: 'auto' }} />
+          <div className="pulse-dot-red" style={{ width: '12px', height: '12px' }} />
+          <p style={{ margin: 0, fontSize: '0.86rem', fontWeight: 750, color: '#334155' }}>
+            Verifying Workspace Credentials...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -130,43 +208,6 @@ export default function MainLayout({ children }) {
           background: 'radial-gradient(circle, rgba(2, 132, 199, 0.54) 0%, rgba(2, 132, 199, 0) 70%)',
           filter: 'blur(70px)',
           animation: 'floatOrbReverse 22s ease-in-out infinite alternate'
-        }} />
-        {/* Orb 3: Royal Violet */}
-        <div style={{
-          position: 'absolute',
-          top: '48%',
-          left: '12%',
-          width: '740px',
-          height: '740px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(124, 58, 237, 0) 70%)',
-          filter: 'blur(70px)',
-          animation: 'floatOrb 25s ease-in-out infinite alternate'
-        }} />
-        {/* Orb 4: Emerald Mint */}
-        <div style={{
-          position: 'absolute',
-          bottom: '5%',
-          right: '8%',
-          width: '760px',
-          height: '760px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(5, 150, 105, 0.46) 0%, rgba(5, 150, 105, 0) 70%)',
-          filter: 'blur(65px)',
-          animation: 'floatOrbReverse 20s ease-in-out infinite alternate'
-        }} />
-        {/* Orb 5: Warm Amber */}
-        <div style={{
-          position: 'absolute',
-          top: '36%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '680px',
-          height: '680px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.40) 0%, rgba(245, 158, 11, 0) 70%)',
-          filter: 'blur(60px)',
-          animation: 'floatOrb 16s ease-in-out infinite alternate'
         }} />
       </div>
 
@@ -203,50 +244,39 @@ export default function MainLayout({ children }) {
         pointerEvents: 'none'
       }}>
         <div style={{
-          maxWidth: '1580px',
+          maxWidth: '1620px',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: '62px',
-          padding: '0 20px 0 20px',
+          height: '64px',
+          padding: '0 16px',
           borderRadius: '9999px',
-          backgroundColor: 'rgba(255, 255, 255, 0.82)',
+          backgroundColor: 'rgba(255, 255, 255, 0.88)',
           backdropFilter: 'blur(36px) saturate(210%) contrast(102%)',
           WebkitBackdropFilter: 'blur(36px) saturate(210%) contrast(102%)',
           border: '1.5px solid rgba(255, 255, 255, 0.95)',
-          boxShadow: '0 14px 40px -5px rgba(15, 23, 42, 0.12), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(0, 0, 0, 0.04)',
+          boxShadow: '0 14px 40px -5px rgba(15, 23, 42, 0.12), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95)',
           gap: '10px',
           pointerEvents: 'auto',
           boxSizing: 'border-box'
         }}>
-          {/* Stowave Logo */}
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <img 
-              src="/stowave-logo-transparent.png" 
-              alt="Stowave" 
-              style={{ height: '30px', width: 'auto', objectFit: 'contain' }}
-            />
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '2px 7px',
-              borderRadius: '9999px',
-              background: 'rgba(225, 29, 72, 0.14)',
-              border: '1.5px solid rgba(225, 29, 72, 0.45)',
-              color: '#9f1239',
-              fontSize: '0.68rem',
-              fontWeight: 850
-            }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#e11d48' }}></span>
-              Live
-            </span>
-          </Link>
+          {/* Stowave Logo & Live Radar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img 
+                src="/stowave-logo-transparent.png" 
+                alt="Stowave" 
+                style={{ height: '30px', width: 'auto', objectFit: 'contain' }}
+              />
+            </Link>
 
-          {/* Navigation Route Links */}
-          <nav style={{
-            display: 'flex',
+            {/* Live Presence Crawler Radar Trigger */}
+            <LivePresenceRadar currentUser={currentUser} />
+          </div>
+
+          {/* Desktop Navigation Route Links */}
+          <nav className="desktop-nav-only" style={{
             alignItems: 'center',
             gap: '2px',
             background: 'rgba(255, 255, 255, 0.70)',
@@ -276,14 +306,14 @@ export default function MainLayout({ children }) {
                     fontSize: '0.80rem',
                     fontWeight: isActive ? 850 : 750,
                     color: isActive ? '#ffffff' : '#000000',
-                    background: isActive ? '#e11d48' : 'transparent',
+                    background: isActive ? '#e11d48' : (link.highlight ? 'rgba(225, 29, 72, 0.08)' : 'transparent'),
                     boxShadow: isActive ? '0 4px 14px rgba(225, 29, 72, 0.38)' : 'none',
                     textDecoration: 'none',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.16s ease'
                   }}
                 >
-                  <Icon size={14} color={isActive ? '#ffffff' : '#000000'} />
+                  <Icon size={14} color={isActive ? '#ffffff' : (link.highlight ? '#be123c' : '#000000')} />
                   <span>{link.label}</span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span style={{
@@ -302,30 +332,35 @@ export default function MainLayout({ children }) {
             })}
           </nav>
 
-          {/* Right Section: Tour, AI, Role Switcher */}
+          {/* Right Section: Admin Invite, Tour, AI, Profile Pill */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* Quick Tour Button */}
-            <button
-              onClick={() => setIsTourOpen(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '5px 10px',
-                borderRadius: '9999px',
-                background: 'rgba(255, 255, 255, 0.90)',
-                border: '1.5px solid rgba(203, 213, 225, 0.95)',
-                color: '#000000',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              title="Open Platform Onboarding Tour"
-            >
-              <HelpCircle size={14} color="#d97706" />
-              <span>Tour</span>
-            </button>
+            {/* Admin Invite Button */}
+            {isAdmin && (
+              <button
+                onClick={() => setIsInviteModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '5px 11px',
+                  borderRadius: '9999px',
+                  background: 'rgba(225, 29, 72, 0.12)',
+                  border: '1.5px solid rgba(225, 29, 72, 0.4)',
+                  color: '#be123c',
+                  fontSize: '0.78rem',
+                  fontWeight: 850,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Admin: Send 30-Minute Expiring Invite Email"
+              >
+                <UserPlus size={14} />
+                <span className="desktop-nav-only">+ Invite</span>
+              </button>
+            )}
+
+            {/* In-Portal Real-Time Notification Center (LinkedIn/WhatsApp style) */}
+            <NotificationCenter currentUser={currentUser} />
 
             {/* AI Advisor Button */}
             <button
@@ -348,27 +383,24 @@ export default function MainLayout({ children }) {
               }}
             >
               <Sparkles size={13} />
-              <span>Stowave AI</span>
+              <span className="desktop-nav-only">Stowave AI</span>
             </button>
 
-            {/* Subtle Divider */}
-            <div style={{ width: '1px', height: '22px', backgroundColor: 'rgba(203, 213, 225, 0.85)', margin: '0 2px' }} />
-
-            {/* Role & Profile Switcher Pill */}
-            <div 
+            {/* Profile Avatar Pill (Opens OTP-Secured Profile Modal) */}
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
               style={{
-                position: 'relative',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 background: 'rgba(255, 255, 255, 0.95)',
                 border: '1.5px solid rgba(203, 213, 225, 0.95)',
-                padding: '3px 10px 3px 4px',
+                padding: '3px 8px 3px 3px',
                 borderRadius: '9999px',
                 boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
                 cursor: 'pointer'
               }}
-              title="Click to switch active profile"
+              title="Click to manage profile & credentials (OTP Secured)"
             >
               <img
                 src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
@@ -381,49 +413,277 @@ export default function MainLayout({ children }) {
                   border: '1.5px solid #e11d48'
                 }}
               />
-              <div style={{ textAlign: 'left', lineHeight: 1.1 }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 850, color: '#000000', whiteSpace: 'nowrap' }}>
+              <div style={{ textAlign: 'left', lineHeight: 1.1 }} className="desktop-nav-only">
+                <div style={{ fontSize: '0.76rem', fontWeight: 850, color: '#000000', whiteSpace: 'nowrap' }}>
                   {currentUser?.name?.split(' ')[0] || 'Admin'}
                 </div>
                 <div style={{ fontSize: '0.62rem', color: '#9f1239', textTransform: 'uppercase', fontWeight: 850 }}>
                   {currentUser?.role || 'Admin'}
                 </div>
               </div>
-              <ChevronDown size={12} color="#000000" />
+            </button>
 
-              {/* Invisible native select covering the pill for instant profile switching */}
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 11px',
+                borderRadius: '9999px',
+                background: 'rgba(241, 245, 249, 0.95)',
+                border: '1.5px solid rgba(203, 213, 225, 0.95)',
+                color: '#64748b',
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Sign Out of Workspace"
+            >
+              <LogOut size={13} color="#e11d48" />
+              <span className="desktop-nav-only">Logout</span>
+            </button>
+
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="mobile-menu-btn"
+              style={{
+                background: 'rgba(241, 245, 249, 0.9)',
+                border: '1.5px solid rgba(203, 213, 225, 0.9)',
+                borderRadius: '10px',
+                padding: '7px',
+                cursor: 'pointer',
+                color: '#0f172a'
+              }}
+              aria-label="Open mobile navigation menu"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Slide-Out Drawer Overlay */}
+      {isMobileDrawerOpen && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setIsMobileDrawerOpen(false)}
+          style={{ justifyContent: 'flex-end', padding: 0 }}
+        >
+          <div
+            className="mobile-drawer-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '84%',
+              maxWidth: '340px',
+              height: '100%',
+              background: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(36px) saturate(210%)',
+              borderLeft: '1.5px solid rgba(255, 255, 255, 0.95)',
+              boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '20px 18px',
+              boxSizing: 'border-box',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Drawer Top */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img 
+                  src="/stowave-logo-transparent.png" 
+                  alt="Stowave" 
+                  style={{ height: '24px', width: 'auto' }}
+                />
+              </div>
+              <button
+                onClick={() => setIsMobileDrawerOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* User Profile Card */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px',
+              borderRadius: '14px',
+              background: 'rgba(241, 245, 249, 0.8)',
+              border: '1px solid rgba(203, 213, 225, 0.8)',
+              marginBottom: '16px'
+            }}>
+              <img
+                src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                alt={currentUser?.name}
+                style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e11d48' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 850, color: '#0f172a' }}>
+                  {currentUser?.name || 'Administrator'}
+                </div>
+                <div style={{ fontSize: '0.70rem', color: '#be123c', fontWeight: 800, textTransform: 'uppercase' }}>
+                  {currentUser?.role} • {currentUser?.points || 0} pts
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px' }}>
+              <button
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  setIsProfileModalOpen(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  background: 'rgba(225, 29, 72, 0.1)',
+                  border: '1px solid rgba(225, 29, 72, 0.3)',
+                  color: '#be123c',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                <User size={15} />
+                <span>Edit Profile (OTP Secured)</span>
+              </button>
+
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    setIsInviteModalOpen(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '9px 12px',
+                    borderRadius: '10px',
+                    background: 'rgba(2, 132, 199, 0.1)',
+                    border: '1px solid rgba(2, 132, 199, 0.3)',
+                    color: '#0284c7',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <UserPlus size={15} />
+                  <span>+ Invite Member / Admin (30m Link)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Navigation Links in Mobile Drawer */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 850, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Platform Navigation
+              </div>
+              {navLinks.map(link => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.86rem',
+                      fontWeight: isActive ? 850 : 700,
+                      color: isActive ? '#ffffff' : '#0f172a',
+                      background: isActive ? '#e11d48' : 'transparent',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Icon size={16} color={isActive ? '#ffffff' : '#475569'} />
+                      <span>{link.label}</span>
+                    </div>
+                    {link.badge !== undefined && link.badge > 0 && (
+                      <span style={{
+                        fontSize: '0.68rem',
+                        padding: '1px 6px',
+                        borderRadius: '999px',
+                        background: isActive ? '#ffffff' : 'rgba(225, 29, 72, 0.15)',
+                        color: isActive ? '#e11d48' : '#be123c',
+                        fontWeight: 800
+                      }}>
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Switch Active User Selector */}
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(203, 213, 225, 0.7)' }}>
+              <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>
+                Switch Active User Profile
+              </label>
               <select
+                className="select-field"
                 value={currentUser?.id}
                 onChange={(e) => {
                   const sel = users.find(u => u.id === e.target.value);
                   if (sel) handleSwitchUser(sel);
                 }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: 0,
-                  width: '100%',
-                  height: '100%',
-                  cursor: 'pointer',
-                  zIndex: 2
-                }}
-                title="Switch Team Member Profile"
+                style={{ fontSize: '0.82rem', padding: '8px 10px' }}
               >
                 {users.map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.name} — {u.role.toUpperCase()}
+                    {u.name} ({u.role.toUpperCase()})
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* Mobile Sign Out Button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '11px',
+                borderRadius: '12px',
+                background: 'rgba(225, 29, 72, 0.1)',
+                border: '1.5px solid rgba(225, 29, 72, 0.35)',
+                color: '#be123c',
+                fontSize: '0.86rem',
+                fontWeight: 850,
+                cursor: 'pointer',
+                marginTop: '14px'
+              }}
+            >
+              <LogOut size={16} />
+              <span>Log Out of Workspace</span>
+            </button>
           </div>
         </div>
-      </header>
+      )}
 
       {/* Main Page Body */}
       <main style={{
         flex: 1,
-        maxWidth: '1600px',
+        maxWidth: '1620px',
         width: '100%',
         margin: '0 auto',
         padding: '30px 24px',
@@ -433,6 +693,34 @@ export default function MainLayout({ children }) {
       }}>
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Smartphones) */}
+      <div className="mobile-bottom-bar">
+        <Link href="/" className={`mobile-bottom-link ${pathname === '/' ? 'active' : ''}`}>
+          <ShieldCheck size={20} />
+          <span>Home</span>
+        </Link>
+        <Link href="/tasks" className={`mobile-bottom-link ${pathname === '/tasks' ? 'active' : ''}`}>
+          <CheckSquare size={20} />
+          <span>Tasks</span>
+        </Link>
+        <Link href="/operations" className={`mobile-bottom-link ${pathname === '/operations' ? 'active' : ''}`}>
+          <FolderKanban size={20} />
+          <span>Ops</span>
+        </Link>
+        <Link href="/team" className={`mobile-bottom-link ${pathname === '/team' ? 'active' : ''}`}>
+          <Users size={20} />
+          <span>Team</span>
+        </Link>
+        <button
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="mobile-bottom-link"
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <Menu size={20} />
+          <span>Menu</span>
+        </button>
+      </div>
 
       {/* Onboarding Interactive Tour */}
       <InteractiveTour
@@ -448,6 +736,21 @@ export default function MainLayout({ children }) {
         stats={stats}
         tasks={tasks}
         users={users}
+      />
+
+      {/* OTP Secured Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={handleUserUpdated}
+      />
+
+      {/* Admin 30-Minute Expiring Invite Modal */}
+      <InviteUserModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        currentUser={currentUser}
       />
     </div>
   );

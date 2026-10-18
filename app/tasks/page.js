@@ -21,7 +21,7 @@ export default function TasksPage() {
       setUsers(usersRes);
 
       const savedUserId = localStorage.getItem('apex_current_user_id');
-      const activeUser = usersRes.find(u => u.id === savedUserId) || usersRes.find(u => u.role === 'admin') || usersRes[0];
+      const activeUser = usersRes.find(u => u.id === savedUserId) || null;
       setCurrentUser(activeUser);
     } catch (err) {
       console.error('Error loading tasks:', err);
@@ -74,10 +74,61 @@ export default function TasksPage() {
     }
   };
 
+  const handleUnsubmitWork = async (taskId) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/unsubmit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser?.id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to delete submission');
+      }
+      loadTasksData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleDeleteTask = async (taskId) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
     try {
       await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      loadTasksData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRequestExtension = async (taskId, extensionData) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/request-extension`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(extensionData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to request extension');
+      }
+      loadTasksData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleReviewExtension = async (taskId, reviewData) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/review-extension`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to review extension');
+      }
       loadTasksData();
     } catch (err) {
       console.error(err);
@@ -92,9 +143,12 @@ export default function TasksPage() {
         currentUser={currentUser}
         onOpenTaskModal={() => setIsTaskModalOpen(true)}
         onSubmitWork={handleSubmitWork}
+        onUnsubmitWork={handleUnsubmitWork}
         onReviewTask={handleReviewTask}
         onDeleteTask={handleDeleteTask}
         onUpdateTaskStatus={loadTasksData}
+        onRequestExtension={handleRequestExtension}
+        onReviewExtension={handleReviewExtension}
       />
 
       <CreateTaskModal

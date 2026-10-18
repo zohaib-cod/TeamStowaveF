@@ -1055,8 +1055,12 @@ export default function AiAssistantDrawer({
   };
 
   // Send message
-  const handleSend = async (customPrompt = null) => {
-    const rawMsg = typeof customPrompt === 'string' ? customPrompt : inputText;
+  const handleSend = async (eOrPrompt = null) => {
+    if (eOrPrompt && typeof eOrPrompt.preventDefault === 'function') {
+      eOrPrompt.preventDefault();
+      eOrPrompt.stopPropagation();
+    }
+    const rawMsg = typeof eOrPrompt === 'string' ? eOrPrompt : inputText;
     if ((!rawMsg.trim() && !capturedImage) || isLoading) return;
 
     const userMsg = rawMsg.trim() || (capturedImage ? 'Please analyze this live visual snapshot.' : '');
@@ -1105,6 +1109,14 @@ export default function AiAssistantDrawer({
         const reply = data.reply;
         setMessages([...newMessages, { role: 'assistant', content: reply, model: data.model }]);
         speakText(reply);
+
+        if (data.actionExecuted) {
+          try {
+            window.dispatchEvent(new CustomEvent('stowave_data_updated', { detail: data.actionExecuted }));
+            window.dispatchEvent(new CustomEvent('tasks-updated', { detail: data.actionExecuted }));
+          } catch (evErr) {}
+          showToast(`⚡ Workspace Action Executed: ${data.actionExecuted.type || 'Success'}`);
+        }
       } else {
         const history = newMessages.slice(-6).map(m => ({ role: m.role, content: m.content }));
         const response = await fetch('/api/ai/chat', {
@@ -1123,6 +1135,14 @@ export default function AiAssistantDrawer({
         const reply = data.reply;
         setMessages([...newMessages, { role: 'assistant', content: reply, model: data.model }]);
         speakText(reply);
+
+        if (data.actionExecuted) {
+          try {
+            window.dispatchEvent(new CustomEvent('stowave_data_updated', { detail: data.actionExecuted }));
+            window.dispatchEvent(new CustomEvent('tasks-updated', { detail: data.actionExecuted }));
+          } catch (evErr) {}
+          showToast(`⚡ Workspace Action Executed: ${data.actionExecuted.type || 'Success'}`);
+        }
       }
     } catch (err) {
       console.error('AI Request error:', err);
@@ -1753,14 +1773,21 @@ export default function AiAssistantDrawer({
         </div>
 
         {/* 6. Input Form with Voice, Camera & Attachments */}
-        <form onSubmit={handleSend} style={{
-          padding: '14px 20px',
-          borderTop: '1px solid #e2e8f0',
-          background: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSend(e);
+          }} 
+          style={{
+            padding: '14px 20px',
+            borderTop: '1px solid #e2e8f0',
+            background: '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}
+        >
           {isListening && (
             <div style={{
               display: 'flex',
@@ -1837,7 +1864,14 @@ export default function AiAssistantDrawer({
               type="text"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder={capturedImage ? 'Snapshot captured! Ask AI about it...' : `Ask Stowave AI (e.g. "audit karke do", "pending tasks")...`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSend(e);
+                }
+              }}
+              placeholder={capturedImage ? 'Snapshot captured! Ask AI about it...' : `Ask Stowave AI (e.g. "Ali ko task assign karo", "task approve kr do")...`}
               disabled={isLoading}
               style={{
                 flex: 1,
@@ -1854,7 +1888,12 @@ export default function AiAssistantDrawer({
 
             {/* Submit / Send Button */}
             <button
-              type="submit"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSend(e);
+              }}
               disabled={isLoading || (!inputText.trim() && !capturedImage)}
               style={{
                 padding: '10px 16px',

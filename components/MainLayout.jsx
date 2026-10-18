@@ -60,8 +60,17 @@ export default function MainLayout({ children }) {
     loadSharedData();
 
     const handleOpenAi = () => setIsAiDrawerOpen(true);
+    const handleDataUpdate = () => loadSharedData();
+
     window.addEventListener('open-ai-drawer', handleOpenAi);
-    return () => window.removeEventListener('open-ai-drawer', handleOpenAi);
+    window.addEventListener('stowave_data_updated', handleDataUpdate);
+    window.addEventListener('tasks-updated', handleDataUpdate);
+
+    return () => {
+      window.removeEventListener('open-ai-drawer', handleOpenAi);
+      window.removeEventListener('stowave_data_updated', handleDataUpdate);
+      window.removeEventListener('tasks-updated', handleDataUpdate);
+    };
   }, []);
 
   const showToast = (message, type = 'success') => {

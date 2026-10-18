@@ -30,6 +30,15 @@ export default function TasksPage() {
 
   useEffect(() => {
     loadTasksData();
+
+    const handleUpdate = () => loadTasksData();
+    window.addEventListener('tasks-updated', handleUpdate);
+    window.addEventListener('stowave_data_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('tasks-updated', handleUpdate);
+      window.removeEventListener('stowave_data_updated', handleUpdate);
+    };
   }, []);
 
   const handleCreateTask = async (taskData) => {

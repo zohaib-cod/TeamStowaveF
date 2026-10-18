@@ -131,7 +131,13 @@ export default function LoginPage() {
           })
         });
 
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = { error: `Server error (${res.status}): Server sy rabta qaim nahi ho saka.` };
+        }
+
         if (!res.ok) throw new Error(data.error || 'Failed to initialize admin account.');
 
         confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
@@ -157,7 +163,13 @@ export default function LoginPage() {
           })
         });
 
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = { error: `Server error (${res.status}): Server sy rabta qaim nahi ho saka.` };
+        }
+
         if (!res.ok) {
           if (data.requiresFirstAdminSetup) {
             setIsFirstAdminMode(true);

@@ -2,7 +2,14 @@
 const nextConfig = {
   reactCompiler: true,
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+    let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    // In production or on Vercel, localhost/private IPs cannot be resolved and cause DNS_HOSTNAME_RESOLVED_PRIVATE
+    if (!backendUrl || (isVercel && (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')))) {
+      backendUrl = 'https://teamstowaveb.vercel.app';
+    }
+
     return [
       {
         source: '/api/:path*',
@@ -13,3 +20,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+

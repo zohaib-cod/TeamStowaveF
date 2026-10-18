@@ -11,7 +11,12 @@ import {
   Sparkles, 
   HelpCircle, 
   Database, 
-  Globe 
+  Globe,
+  MessageSquare,
+  Mail,
+  Send,
+  Phone,
+  AlertCircle
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -22,17 +27,33 @@ export default function SettingsPage() {
     apifyUserId: '',
     apifyApiKey: '',
     groqModel: 'openai/gpt-oss-120b',
-    visionModel: 'qwen/qwen3.8-27b'
+    visionModel: 'qwen/qwen3.8-27b',
+    adminWhatsappNumbers: '923290010909, 923184360458',
+    whatsappPhoneNumberId: '1141217175751828'
   });
   const [isSaved, setIsSaved] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
+
+  // Notification testing states
+  const [isTestingWhatsapp, setIsTestingWhatsapp] = useState(false);
+  const [whatsappTestResult, setWhatsappTestResult] = useState(null);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState(null);
+  const [whatsappHealth, setWhatsappHealth] = useState(null);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => setSettings(prev => ({ ...prev, ...data })))
       .catch(err => console.error(err));
+
+    // Initial check for WhatsApp API health
+    fetch('/api/notifications/whatsapp-health')
+      .then(res => res.json())
+      .then(data => setWhatsappHealth(data))
+      .catch(() => {});
   }, []);
 
   const handleSaveSettings = async (e) => {
@@ -47,6 +68,51 @@ export default function SettingsPage() {
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleTestWhatsapp = async () => {
+    setIsTestingWhatsapp(true);
+    setWhatsappTestResult(null);
+    try {
+      const resp = await fetch('/api/notifications/test-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: '🚀 Stowave Live WhatsApp Test Alert: Real-time automated notifications active!' })
+      });
+      const data = await resp.json();
+      setWhatsappTestResult(data);
+    } catch (err) {
+      setWhatsappTestResult({ error: err.message });
+    } finally {
+      setIsTestingWhatsapp(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setIsTestingEmail(true);
+    setEmailTestResult(null);
+    try {
+      const resp = await fetch('/api/notifications/test-email', { method: 'POST' });
+      const data = await resp.json();
+      setEmailTestResult(data);
+    } catch (err) {
+      setEmailTestResult({ error: err.message });
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
+  const handleCheckWhatsappHealth = async () => {
+    setIsCheckingHealth(true);
+    try {
+      const resp = await fetch('/api/notifications/whatsapp-health');
+      const data = await resp.json();
+      setWhatsappHealth(data);
+    } catch (err) {
+      setWhatsappHealth({ status: 'Error', errorMessage: err.message });
+    } finally {
+      setIsCheckingHealth(false);
     }
   };
 
@@ -84,11 +150,147 @@ export default function SettingsPage() {
             Workspace Settings & Integrations
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600, margin: 0 }}>
-            Manage company profile, API tokens (Apify, WhatsApp, Supabase, Groq), and reset workspace to clean real-time state.
+            Manage company profile, API tokens (WhatsApp, Email, Apify, Groq), and verify real-time notification dispatchers.
           </p>
         </div>
 
-        {/* 1. Company Profile Form */}
+        {/* 1. Automated Notification Channels (WhatsApp & Email) */}
+        <div className="glass-panel" style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <MessageSquare size={20} color="#25D366" />
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: '#000000', margin: 0 }}>
+                  Automated Notification Channels (WhatsApp & Email)
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 600, margin: 0 }}>
+                Every workspace event (Task Assigned, Deliverables Submitted, Approvals, Rejections, Deadline Extensions) dispatches instant alerts.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleTestWhatsapp}
+                disabled={isTestingWhatsapp}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.82rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Phone size={14} color="#25D366" />
+                <span>{isTestingWhatsapp ? 'Testing WhatsApp...' : 'Test WhatsApp Alert'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTestEmail}
+                disabled={isTestingEmail}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.82rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Mail size={14} color="#e11d48" />
+                <span>{isTestingEmail ? 'Sending Email...' : 'Test Gmail Dispatch'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCheckWhatsappHealth}
+                disabled={isCheckingHealth}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.82rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={14} className={isCheckingHealth ? 'spin' : ''} />
+                <span>Check Meta Health</span>
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Target WhatsApp Numbers</label>
+              <div style={{ fontSize: '0.92rem', fontWeight: 750, color: '#0f172a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Phone size={14} color="#25D366" />
+                <span>{settings.adminWhatsappNumbers || '923290010909, 923184360458'}</span>
+              </div>
+              <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '4px 0 0 0' }}>Configured via ADMIN_WHATSAPP_NUMBER in backend/.env</p>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Meta Phone Number ID</label>
+              <div style={{ fontSize: '0.92rem', fontWeight: 750, color: '#0f172a', marginTop: '4px', fontFamily: 'monospace' }}>
+                {settings.whatsappPhoneNumberId || '1141217175751828'}
+              </div>
+              <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '4px 0 0 0' }}>Meta Cloud API Phone Number ID</p>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Meta API Connection Status</label>
+              <div style={{ marginTop: '4px' }}>
+                {whatsappHealth ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 750,
+                    background: whatsappHealth.valid ? '#dcfce7' : '#fee2e2',
+                    color: whatsappHealth.valid ? '#166534' : '#991b1b',
+                    border: `1px solid ${whatsappHealth.valid ? '#86efac' : '#fca5a5'}`
+                  }}>
+                    {whatsappHealth.valid ? <Check size={12} /> : <AlertCircle size={12} />}
+                    {whatsappHealth.valid ? 'Verified & Active' : (whatsappHealth.status || 'Auth Required')}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Checking status...</span>
+                )}
+              </div>
+              {whatsappHealth && !whatsappHealth.valid && whatsappHealth.errorMessage && (
+                <p style={{ fontSize: '0.72rem', color: '#dc2626', margin: '4px 0 0 0', lineHeight: 1.3 }}>
+                  {whatsappHealth.errorMessage} (Provide fresh token in .env)
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Test results banner */}
+          {whatsappTestResult && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: '#0f172a',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontFamily: 'monospace',
+              marginBottom: '12px'
+            }}>
+              <div style={{ fontWeight: 750, marginBottom: '4px', color: '#38bdf8' }}>📱 WhatsApp Test Dispatch Results:</div>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                {JSON.stringify(whatsappTestResult, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {emailTestResult && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: '#0f172a',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontFamily: 'monospace',
+              marginBottom: '12px'
+            }}>
+              <div style={{ fontWeight: 750, marginBottom: '4px', color: '#4ade80' }}>✉️ Gmail SMTP Test Dispatch Results:</div>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                {JSON.stringify(emailTestResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Company Profile Form */}
         <div className="glass-panel" style={{ padding: '28px' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: '#000000', marginBottom: '18px' }}>
             Company Profile & Timezone
@@ -188,7 +390,7 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* 2. Clean Slate & Reset Workspace Section */}
+        {/* 3. Clean Slate & Reset Workspace Section */}
         <div className="glass-panel" style={{
           padding: '28px',
           border: '1.5px solid rgba(225, 29, 72, 0.4)',

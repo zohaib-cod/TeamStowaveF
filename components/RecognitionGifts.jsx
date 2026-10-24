@@ -224,7 +224,7 @@ export default function RecognitionGifts({
       {activeSubTab === 'kudos' && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '18px'
         }}>
           {shoutouts.length === 0 ? (
@@ -379,7 +379,7 @@ export default function RecognitionGifts({
       {activeSubTab === 'gifting' && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '18px'
         }}>
           {gifts.length === 0 ? (
@@ -484,7 +484,7 @@ export default function RecognitionGifts({
       {activeSubTab === 'rating' && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '18px'
         }}>
           {peerRatings.length === 0 ? (

@@ -16,9 +16,11 @@ import {
   Upload,
   Image as ImageIcon,
   Link as LinkIcon,
-  Check
+  Check,
+  Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import ImageLightboxModal from './ImageLightboxModal';
 
 export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdated }) {
   const [formData, setFormData] = useState({
@@ -35,6 +37,7 @@ export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdat
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadSuccessNote, setUploadSuccessNote] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
 
   // Step 1: 'edit' | Step 2: 'otp_verification' | Step 3: 'success'
   const [step, setStep] = useState('edit');
@@ -270,17 +273,15 @@ export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdat
                 style={{ display: 'none' }}
               />
 
-              {/* Avatar Circle with Camera Overlay */}
+              {/* Avatar Circle: Click image to view full size in lightbox, click camera badge to upload */}
               <div
-                onClick={() => fileInputRef.current?.click()}
                 style={{
                   position: 'relative',
-                  cursor: 'pointer',
                   flexShrink: 0
                 }}
-                title="Click to select photo from gallery / computer"
               >
                 <img
+                  onClick={() => setShowLightbox(true)}
                   src={formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                   alt="Avatar"
                   style={{
@@ -290,25 +291,35 @@ export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdat
                     objectFit: 'cover',
                     border: '2.5px solid #e11d48',
                     display: 'block',
-                    boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)'
+                    boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)',
+                    cursor: 'pointer'
                   }}
+                  title="Click to view full photo in high resolution"
                 />
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-2px',
-                  right: '-2px',
-                  background: '#e11d48',
-                  color: '#ffffff',
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid #ffffff',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                }}>
-                  <Camera size={12} />
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-2px',
+                    background: '#e11d48',
+                    color: '#ffffff',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                    cursor: 'pointer'
+                  }}
+                  title="Click to change photo"
+                >
+                  <Camera size={13} />
                 </div>
               </div>
 
@@ -352,8 +363,33 @@ export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdat
                     ) : (
                       <Upload size={13} />
                     )}
-                    <span>{isUploadingImage ? 'Uploading Photo...' : '📁 Gallery Sy Photo Upload Karein'}</span>
+                    <span>{isUploadingImage ? 'Uploading Photo...' : '📁 Change Photo'}</span>
                   </button>
+
+                  {/* View Full Photo Button */}
+                  {formData.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setShowLightbox(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '7px 12px',
+                        borderRadius: '9999px',
+                        background: 'rgba(2, 132, 199, 0.1)',
+                        border: '1.5px solid rgba(2, 132, 199, 0.35)',
+                        color: '#0284c7',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                      title="View full size profile photo"
+                    >
+                      <Eye size={12} />
+                      <span>View Full Photo</span>
+                    </button>
+                  )}
 
                   {/* Toggle for manual URL */}
                   <button
@@ -656,6 +692,16 @@ export default function ProfileModal({ isOpen, onClose, currentUser, onUserUpdat
           </div>
         )}
       </div>
+
+      {showLightbox && formData.avatar && (
+        <ImageLightboxModal
+          isOpen={showLightbox}
+          imageUrl={formData.avatar}
+          title={`${formData.name || 'My Profile'} — Profile Photo`}
+          subtitle="Your current profile photo"
+          onClose={() => setShowLightbox(false)}
+        />
+      )}
     </div>
   );
 }

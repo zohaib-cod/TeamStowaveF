@@ -304,7 +304,7 @@ export default function DashboardOverview({
       </div>
 
       {/* 3. Main Operational Sections (Split 2-Columns) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '20px' }}>
         
         {/* Left Col: High-Priority Tasks Spotlight */}
         <div style={{

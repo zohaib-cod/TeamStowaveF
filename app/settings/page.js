@@ -29,8 +29,10 @@ export default function SettingsPage() {
     groqModel: 'openai/gpt-oss-120b',
     visionModel: 'qwen/qwen3.8-27b',
     adminWhatsappNumbers: '923290010909, 923184360458',
-    whatsappPhoneNumberId: '1141217175751828'
+    whatsappPhoneNumberId: '1291620604045427',
+    whatsappToken: ''
   });
+  const [showToken, setShowToken] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
@@ -205,26 +207,159 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+          {/* WhatsApp Credentials Editor */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            padding: '20px',
+            borderRadius: '16px',
+            border: '1.5px solid rgba(226, 232, 240, 0.95)',
+            marginBottom: '18px'
+          }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 850, color: '#0f172a' }}>
+              WhatsApp Cloud API Configuration & Live Credentials
+            </h4>
+            <p style={{ margin: '0 0 14px', fontSize: '0.80rem', color: '#64748b', fontWeight: 600 }}>
+              Update Meta Access Token, Phone Number ID, or target alert recipients anytime. Changes take effect instantly without restarting.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '14px', marginBottom: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+                  Meta Access Token (System User / Permanent)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showToken ? 'text' : 'password'}
+                    placeholder="Paste Meta Access Token (starts with EAA...)"
+                    value={settings.whatsappToken || ''}
+                    onChange={e => setSettings({ ...settings, whatsappToken: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px 52px 10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '0.86rem',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.74rem',
+                      fontWeight: 750,
+                      color: '#64748b'
+                    }}
+                  >
+                    {showToken ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+                  Meta Business Suite ➔ System Users ➔ Token with <code>whatsapp_business_messaging</code>.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+                  WhatsApp Phone Number ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="1291620604045427"
+                  value={settings.whatsappPhoneNumberId || ''}
+                  onChange={e => setSettings({ ...settings, whatsappPhoneNumberId: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.86rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+                  Found under Meta WhatsApp Manager ➔ API Setup.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+                  Admin WhatsApp Recipients (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="923290010909, 923184360458"
+                  value={settings.adminWhatsappNumbers || ''}
+                  onChange={e => setSettings({ ...settings, adminWhatsappNumbers: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.86rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+                  International format without + sign (e.g. 923290010909).
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleSaveSettings({ preventDefault: () => {} });
+                  handleCheckWhatsappHealth();
+                }}
+                style={{
+                  fontSize: '0.84rem',
+                  padding: '9px 18px',
+                  background: '#25D366',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
+                }}
+              >
+                <Check size={15} /> Save & Apply WhatsApp Credentials
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Target WhatsApp Numbers</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Active WhatsApp Numbers</label>
               <div style={{ fontSize: '0.92rem', fontWeight: 750, color: '#0f172a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Phone size={14} color="#25D366" />
                 <span>{settings.adminWhatsappNumbers || '923290010909, 923184360458'}</span>
               </div>
-              <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '4px 0 0 0' }}>Configured via ADMIN_WHATSAPP_NUMBER in backend/.env</p>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Meta Phone Number ID</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Phone Number ID</label>
               <div style={{ fontSize: '0.92rem', fontWeight: 750, color: '#0f172a', marginTop: '4px', fontFamily: 'monospace' }}>
-                {settings.whatsappPhoneNumberId || '1141217175751828'}
+                {settings.whatsappPhoneNumberId || '1291620604045427'}
               </div>
-              <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '4px 0 0 0' }}>Meta Cloud API Phone Number ID</p>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Meta API Connection Status</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 750, color: '#64748b', textTransform: 'uppercase' }}>Meta Connection Health</label>
               <div style={{ marginTop: '4px' }}>
                 {whatsappHealth ? (
                   <span style={{
@@ -248,7 +383,7 @@ export default function SettingsPage() {
               </div>
               {whatsappHealth && !whatsappHealth.valid && whatsappHealth.errorMessage && (
                 <p style={{ fontSize: '0.72rem', color: '#dc2626', margin: '4px 0 0 0', lineHeight: 1.3 }}>
-                  {whatsappHealth.errorMessage} (Provide fresh token in .env)
+                  ⚠️ {whatsappHealth.errorMessage}
                 </p>
               )}
             </div>
@@ -405,7 +540,7 @@ export default function SettingsPage() {
                 </h3>
               </div>
               <p style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600, maxWidth: '750px', lineHeight: 1.5, margin: 0 }}>
-                Click below to wipe out all sample tasks, reports, and surveys so your team can start with a 100% clean, live canvas. Your Admin account and Apify credentials will be preserved.
+                Click below to wipe out all tasks, reports, and surveys so your team can start fresh. <strong>All registered team member accounts and login credentials are 100% preserved</strong>, so nobody ever needs to sign up again.
               </p>
               {resetMessage && (
                 <div style={{ marginTop: '10px', color: '#059669', fontWeight: 800, fontSize: '0.88rem' }}>

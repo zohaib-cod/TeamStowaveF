@@ -78,6 +78,7 @@ export default function SurveysPage() {
         currentUser={currentUser}
         isAdmin={isAdmin}
         onOpenSurveyModal={() => setIsSurveyModalOpen(true)}
+        onSubmitResponse={handleSubmitSurveyResponse}
         onSubmitSurveyResponse={handleSubmitSurveyResponse}
         onDeleteSurvey={handleDeleteSurvey}
       />

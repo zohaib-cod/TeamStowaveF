@@ -42,7 +42,8 @@ export default function TaskBoard({
   onRequestExtension,
   onReviewExtension
 }) {
-  const isAdmin = currentUser?.role === 'admin';
+  const isMasterAdmin = currentUser?.role === 'master_admin' || currentUser?.isFirstAdmin || currentUser?.isMasterAdmin || currentUser?.email === 'alizohaib.web@gmail.com';
+  const isAdmin = currentUser?.role === 'admin' || isMasterAdmin;
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'list'
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMember, setFilterMember] = useState('all');
@@ -66,10 +67,13 @@ export default function TaskBoard({
   const audioChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
 
-  // Review Task Modal state
+  // Review Task Modal state (Assigner, Admin & Master Admin)
   const [reviewingTask, setReviewingTask] = useState(null);
   const [reviewFeedback, setReviewFeedback] = useState('Outstanding deliverable! Approved.');
   const [reviewRating, setReviewRating] = useState(5);
+  const [bonusPoints, setBonusPoints] = useState(0);
+  const [giftTitle, setGiftTitle] = useState('');
+  const [giftNote, setGiftNote] = useState('');
 
   // Deadline Extension Request Modal state
   const [extendingTask, setExtendingTask] = useState(null);
@@ -125,7 +129,8 @@ export default function TaskBoard({
   const columns = [
     { id: 'todo', label: 'To Do', color: '#0f172a', bgAccent: 'rgba(15, 23, 42, 0.08)' },
     { id: 'in_progress', label: 'In Progress', color: '#0284c7', bgAccent: 'rgba(2, 132, 199, 0.1)' },
-    { id: 'review', label: 'In Review', color: '#7c3aed', bgAccent: 'rgba(124, 58, 237, 0.1)' },
+    { id: 'review', label: 'In Review (Stage 1)', color: '#7c3aed', bgAccent: 'rgba(124, 58, 237, 0.1)' },
+    { id: 'master_review', label: '👑 Master Review (Stage 2)', color: '#be123c', bgAccent: 'rgba(225, 29, 72, 0.12)' },
     { id: 'completed', label: 'Completed', color: '#059669', bgAccent: 'rgba(5, 150, 105, 0.1)' }
   ];
 
@@ -380,8 +385,14 @@ export default function TaskBoard({
 
   const handleOpenReview = (task) => {
     setReviewingTask(task);
-    setReviewFeedback(task.reviewFeedback || 'Outstanding deliverable! Approved.');
-    setReviewRating(task.rating !== undefined && task.rating !== null ? task.rating : 5);
+    const defaultFeedback = task.status === 'master_review' || (task.status === 'review' && task.adminApproved)
+      ? (task.masterReviewFeedback || 'Final deliverable verified and approved with leadership excellence!')
+      : (task.adminReviewFeedback || task.reviewFeedback || 'Outstanding deliverable! Approved.');
+    setReviewFeedback(defaultFeedback);
+    setReviewRating(task.masterRating || task.adminRating || (task.rating !== undefined && task.rating !== null ? task.rating : 5));
+    setBonusPoints(0);
+    setGiftTitle('');
+    setGiftNote('');
   };
 
   const handleConfirmReview = (status) => {
@@ -390,9 +401,17 @@ export default function TaskBoard({
       status, // 'completed' or 'rejected'
       reviewFeedback: reviewFeedback || (status === 'completed' ? 'Deliverable approved!' : 'Deliverable requires revision.'),
       rating: status === 'completed' ? reviewRating : null,
-      reviewerId: currentUser?.id
+      reviewerId: currentUser?.id,
+      giftData: isMasterAdmin ? {
+        bonusPoints: Number(bonusPoints) || 0,
+        giftTitle: giftTitle.trim() || undefined,
+        note: giftNote.trim() || undefined
+      } : undefined
     });
     setReviewingTask(null);
+    setBonusPoints(0);
+    setGiftTitle('');
+    setGiftNote('');
   };
 
   return (
@@ -457,7 +476,7 @@ export default function TaskBoard({
               </button>
             </div>
 
-            {isAdmin && (
+            {currentUser && (
               <button 
                 onClick={onOpenTaskModal} 
                 style={{
@@ -574,12 +593,16 @@ export default function TaskBoard({
       {viewMode === 'kanban' ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '18px',
           alignItems: 'start'
         }}>
           {columns.map(col => {
-            const colTasks = filteredTasks.filter(t => t.status === col.id);
+            const colTasks = filteredTasks.filter(t => {
+              if (col.id === 'review') return t.status === 'review' && !t.adminApproved;
+              if (col.id === 'master_review') return t.status === 'master_review' || (t.status === 'review' && t.adminApproved);
+              return t.status === col.id;
+            });
             return (
               <div 
                 key={col.id}
@@ -980,28 +1003,69 @@ export default function TaskBoard({
                               </button>
                             )}
 
-                            {/* Admin can Review work */}
-                            {isAdmin && task.status === 'review' && (
+                            {/* Assigner / Admin Review at Stage 1 */}
+                            {((task.assignedBy === currentUser?.id || isAdmin || isMasterAdmin) && (task.status === 'review' && !task.adminApproved)) && (
                               <button
                                 onClick={() => handleOpenReview(task)}
                                 style={{
-                                  padding: '5px 10px',
+                                  padding: '5px 12px',
                                   borderRadius: '999px',
-                                  background: '#059669',
+                                  background: '#7c3aed',
                                   color: '#ffffff',
                                   border: 'none',
                                   fontSize: '0.72rem',
-                                  fontWeight: 750,
-                                  cursor: 'pointer'
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
                                 }}
-                                title="Review, Grade, and Approve"
+                                title="Review deliverables at Stage 1"
                               >
-                                Review Work
+                                <span>⭐ {task.assignedBy === currentUser?.id && !isAdmin ? 'Assigner Review' : 'Review Work'}</span>
                               </button>
                             )}
 
-                            {/* Delete (Admin only) */}
-                            {isAdmin && (
+                            {/* Master Review at Stage 2 */}
+                            {(task.status === 'master_review' || (task.status === 'review' && task.adminApproved)) && (
+                              isMasterAdmin || isAdmin ? (
+                                <button
+                                  onClick={() => handleOpenReview(task)}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: '999px',
+                                    background: 'linear-gradient(135deg, #be123c, #e11d48)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 850,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    boxShadow: '0 2px 8px rgba(225, 29, 72, 0.3)'
+                                  }}
+                                  title="Master Admin Final Review & Gifting"
+                                >
+                                  <span>👑 Master Sign-off & Gift</span>
+                                </button>
+                              ) : (
+                                <span style={{
+                                  fontSize: '0.70rem',
+                                  fontWeight: 800,
+                                  color: '#be123c',
+                                  background: 'rgba(225, 29, 72, 0.1)',
+                                  border: '1px solid rgba(225, 29, 72, 0.25)',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px'
+                                }}>
+                                  👑 Awaiting Master Sign-off
+                                </span>
+                              )
+                            )}
+
+                            {/* Delete (Admin or Task Assigner) */}
+                            {(isAdmin || task.assignedBy === currentUser?.id) && (
                               <button
                                 onClick={() => onDeleteTask(task.id)}
                                 style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '2px' }}
@@ -1171,9 +1235,17 @@ export default function TaskBoard({
                                 Delete ({grace.remainingMins}m)
                               </button>
                             )}
-                            {isAdmin && task.status === 'review' && (
+                            {/* Assigner or Admin Review (Stage 1) */}
+                            {((task.assignedBy === currentUser?.id || isAdmin || isMasterAdmin) && task.status === 'review' && !task.adminApproved) && (
                               <button onClick={() => handleOpenReview(task)} style={{ padding: '4px 9px', borderRadius: '8px', background: '#059669', color: '#fff', border: 'none', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                Review
+                                {task.assignedBy === currentUser?.id ? '⭐ Review' : 'Review'}
+                              </button>
+                            )}
+
+                            {/* Master Admin Review & Gifting (Stage 2) */}
+                            {(isMasterAdmin || (isAdmin && task.adminApproved)) && (task.status === 'master_review' || (task.status === 'review' && task.adminApproved)) && (
+                              <button onClick={() => handleOpenReview(task)} style={{ padding: '4px 9px', borderRadius: '8px', background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fff', border: 'none', fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                👑 Master Review
                               </button>
                             )}
                             {isAdmin && (
@@ -1356,13 +1428,25 @@ export default function TaskBoard({
                           Delete ({grace.remainingMins}m)
                         </button>
                       )}
-                      {isAdmin && task.status === 'review' && (
+                      {/* Assigner or Admin Review (Stage 1) */}
+                      {((task.assignedBy === currentUser?.id || isAdmin || isMasterAdmin) && task.status === 'review' && !task.adminApproved) && (
                         <button
                           type="button"
                           onClick={() => handleOpenReview(task)}
                           style={{ padding: '5px 12px', borderRadius: '999px', background: '#059669', color: '#fff', border: 'none', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
                         >
-                          Review
+                          {task.assignedBy === currentUser?.id ? '⭐ Review' : 'Review'}
+                        </button>
+                      )}
+
+                      {/* Master Admin Review & Gifting (Stage 2) */}
+                      {(isMasterAdmin || (isAdmin && task.adminApproved)) && (task.status === 'master_review' || (task.status === 'review' && task.adminApproved)) && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReview(task)}
+                          style={{ padding: '5px 12px', borderRadius: '999px', background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fff', border: 'none', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
+                        >
+                          👑 Master Review
                         </button>
                       )}
                       {isAdmin && (
@@ -2022,12 +2106,36 @@ export default function TaskBoard({
               )}
             </div>
 
-            {/* Admin Rating & Review Notes */}
+            {/* Stage 1 Verification Banner (if already reviewed at stage 1) */}
+            {(reviewingTask.adminApproved || reviewingTask.status === 'master_review') && (
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: '14px',
+                background: 'rgba(124, 58, 237, 0.08)',
+                border: '1.5px solid rgba(124, 58, 237, 0.25)',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 850, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={13} color="#7c3aed" />
+                    <span>Stage 1 Verified by {reviewingTask.adminReviewerName} ({reviewingTask.adminReviewerRole || 'Assigner'})</span>
+                  </span>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px' }}>
+                    ⭐ {reviewingTask.adminRating || 5} / 5 Stars
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e293b', fontWeight: 600, fontStyle: 'italic' }}>
+                  "{reviewingTask.adminReviewFeedback || 'Deliverables verified. Forwarded to Master Admin for final executive sign-off.'}"
+                </p>
+              </div>
+            )}
+
+            {/* Admin / Master Rating & Review Notes */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ fontSize: '0.84rem', fontWeight: 800, color: '#030712', margin: 0 }}>
-                    Deliverable Rating (Optional)
+                    {isMasterAdmin ? '👑 Master Rating Score' : 'Deliverable Rating'}
                   </label>
                   <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 650 }}>
                     {reviewRating ? `⭐ ${reviewRating} / 5 Stars (+${reviewRating * 20} pts)` : 'No rating selected'}
@@ -2077,13 +2185,13 @@ export default function TaskBoard({
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#030712', marginBottom: '6px' }}>
-                  Review Notes / Rejection Reason *
+                  {isMasterAdmin ? '👑 Master Executive Remarks / Approval Comments *' : 'Review Notes / Rejection Reason *'}
                 </label>
                 <textarea
                   rows={3}
                   value={reviewFeedback}
                   onChange={e => setReviewFeedback(e.target.value)}
-                  placeholder="State the reason for rejection/revision or write praise for approval (dispatched via email)..."
+                  placeholder={isMasterAdmin ? "Write executive feedback and recognition comments..." : "State reason for revision or write praise for approval (forwarded to Master Admin)..."}
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -2098,9 +2206,102 @@ export default function TaskBoard({
                 />
               </div>
 
+              {/* Master Admin Gifting & Bonus Points Panel */}
+              {isMasterAdmin && (
+                <div style={{
+                  padding: '16px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(254, 242, 242, 0.95), rgba(255, 241, 242, 0.85))',
+                  border: '1.5px solid rgba(225, 29, 72, 0.35)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 900, color: '#be123c' }}>
+                    <Sparkles size={16} />
+                    <span>👑 Master Executive Recognition & Direct Gifting</span>
+                  </div>
+
+                  {/* Bonus Points */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>Extra Bonus Points:</label>
+                    {[0, 50, 100, 250, 500].map(pts => (
+                      <button
+                        key={pts}
+                        type="button"
+                        onClick={() => setBonusPoints(pts)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          background: bonusPoints === pts ? '#e11d48' : '#ffffff',
+                          color: bonusPoints === pts ? '#ffffff' : '#0f172a',
+                          border: bonusPoints === pts ? '1.5px solid #be123c' : '1px solid #cbd5e1',
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {pts === 0 ? 'None' : `+${pts} pts`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Gift Token */}
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '4px' }}>
+                      🎁 Recognition Gift Token / Award Title (Optional):
+                    </label>
+                    <input
+                      type="text"
+                      value={giftTitle}
+                      onChange={e => setGiftTitle(e.target.value)}
+                      placeholder="e.g. 🏆 Sprint MVP Award, 🌟 Star Contributor, 🎁 Cash / Dinner Voucher"
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.82rem',
+                        color: '#0f172a',
+                        fontWeight: 650,
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {/* Gift Personal Note */}
+                  {giftTitle && (
+                    <div>
+                      <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '4px' }}>
+                        Gift Personal Note:
+                      </label>
+                      <input
+                        type="text"
+                        value={giftNote}
+                        onChange={e => setGiftNote(e.target.value)}
+                        placeholder="e.g. Exceptional speed and quality on this sprint deliverable!"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.82rem',
+                          color: '#0f172a',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Notice */}
               <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: '0.74rem', color: '#b45309', fontWeight: 650 }}>
-                ✉️ An automated email notification will be dispatched to the contributor informing them of your decision and comments.
+                {isMasterAdmin 
+                  ? '👑 Final Master Approval will finalize the task, award points/gifts, and dispatch notifications.' 
+                  : '⭐ Approving at Stage 1 will forward deliverables to Master Admin for final executive review & recognition.'}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap', gap: '10px' }}>
@@ -2115,10 +2316,27 @@ export default function TaskBoard({
                 <button
                   type="button"
                   onClick={() => handleConfirmReview('completed')}
-                  style={{ padding: '10px 22px', borderRadius: '9999px', background: '#059669', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  title="Approve and send approval email"
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '9999px',
+                    background: isMasterAdmin ? 'linear-gradient(135deg, #be123c, #e11d48)' : '#059669',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 850,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isMasterAdmin ? '0 4px 14px rgba(225, 29, 72, 0.35)' : '0 4px 14px rgba(5, 150, 105, 0.35)'
+                  }}
+                  title={isMasterAdmin ? "Give Final Master Approval & Complete Task" : "Approve and forward to Master Admin"}
                 >
-                  <Check size={15} /> Approve Task {reviewRating ? `(+${reviewRating * 20} pts)` : ''}
+                  <Check size={15} /> 
+                  <span>
+                    {isMasterAdmin 
+                      ? `👑 Master Approval & Finalize (+${(reviewRating || 5) * 20 + bonusPoints} pts${giftTitle ? ' + 🎁 Gift' : ''})` 
+                      : '✅ Approve & Forward to Master Admin'}
+                  </span>
                 </button>
               </div>
             </div>

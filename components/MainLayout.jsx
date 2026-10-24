@@ -24,7 +24,9 @@ import {
   X,
   User,
   LogOut,
-  Crown
+  Crown,
+  Timer,
+  History
 } from 'lucide-react';
 import InteractiveTour from './InteractiveTour';
 import AiAssistantDrawer from './AiAssistantDrawer';
@@ -32,6 +34,7 @@ import LivePresenceRadar from './LivePresenceRadar';
 import ProfileModal from './ProfileModal';
 import InviteUserModal from './InviteUserModal';
 import NotificationCenter from './NotificationCenter';
+import PushNotificationManager from './PushNotificationManager';
 
 export default function MainLayout({ children }) {
   const pathname = usePathname();
@@ -138,7 +141,9 @@ export default function MainLayout({ children }) {
   const navLinks = [
     { href: '/', label: 'Overview', icon: ShieldCheck },
     { href: '/tasks', label: 'Tasks', icon: CheckSquare, badge: stats?.activeTasks },
+    { href: '/late-works', label: 'Late Works', icon: Timer, badge: stats?.lateTasksCount },
     { href: '/operations', label: 'Ops Workflows', icon: FolderKanban, highlight: true },
+    { href: '/history', label: 'History', icon: History },
     { href: '/social', label: 'Social Hub', icon: Share2, badge: unreadSocialCount },
     { href: '/standups', label: 'Standups', icon: FileText, badge: stats?.pendingReports },
     { href: '/surveys', label: 'Surveys', icon: Clock, badge: stats?.activeSurveysCount },
@@ -245,14 +250,17 @@ export default function MainLayout({ children }) {
       )}
 
       {/* Floating Apple Liquid Glass Navbar */}
-      <header style={{
+      <header className="navbar-floating-header" style={{
         position: 'sticky',
         top: '10px',
         zIndex: 100,
         padding: '0 16px',
-        pointerEvents: 'none'
+        pointerEvents: 'none',
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '100vw'
       }}>
-        <div style={{
+        <div className="navbar-inner-container" style={{
           maxWidth: '1620px',
           margin: '0 auto',
           display: 'flex',
@@ -268,20 +276,24 @@ export default function MainLayout({ children }) {
           boxShadow: '0 14px 40px -5px rgba(15, 23, 42, 0.12), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95)',
           gap: '10px',
           pointerEvents: 'auto',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          width: '100%'
         }}>
           {/* Stowave Logo & Live Radar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, minWidth: 0 }}>
             <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img 
                 src="/stowave-logo-transparent.png" 
                 alt="Stowave" 
+                className="navbar-brand-logo"
                 style={{ height: '30px', width: 'auto', objectFit: 'contain' }}
               />
             </Link>
 
             {/* Live Presence Crawler Radar Trigger */}
-            <LivePresenceRadar currentUser={currentUser} />
+            <div className="navbar-radar-wrap">
+              <LivePresenceRadar currentUser={currentUser} />
+            </div>
           </div>
 
           {/* Desktop Navigation Route Links */}
@@ -343,12 +355,12 @@ export default function MainLayout({ children }) {
 
           {/* Right Section: Admin Invite, Tour, AI, Profile Pill */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* Admin Invite Button */}
+            {/* Admin Invite Button (Desktop only, present in mobile drawer for phones) */}
             {isAdmin && (
               <button
                 onClick={() => setIsInviteModalOpen(true)}
+                className="desktop-nav-only"
                 style={{
-                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '5px',
                   padding: '5px 11px',
@@ -364,7 +376,7 @@ export default function MainLayout({ children }) {
                 title="Admin: Send 30-Minute Expiring Invite Email"
               >
                 <UserPlus size={14} />
-                <span className="desktop-nav-only">+ Invite</span>
+                <span>+ Invite</span>
               </button>
             )}
 
@@ -374,11 +386,12 @@ export default function MainLayout({ children }) {
             {/* AI Advisor Button */}
             <button
               onClick={() => setIsAiDrawerOpen(true)}
+              className="navbar-ai-btn"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
-                padding: '6px 12px',
+                padding: '6px 10px',
                 borderRadius: '9999px',
                 background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
                 color: '#ffffff',
@@ -390,21 +403,22 @@ export default function MainLayout({ children }) {
                 transition: 'all 0.15s ease',
                 whiteSpace: 'nowrap'
               }}
+              title="Open Stowave AI Assistant"
             >
               <Sparkles size={13} />
               <span className="desktop-nav-only">Stowave AI</span>
             </button>
 
-            {/* Profile Avatar Pill (Opens OTP-Secured Profile Modal) */}
+            {/* Profile Avatar Pill (Desktop only - accessible via mobile bottom bar and drawer on phones) */}
             <button
               onClick={() => setIsProfileModalOpen(true)}
+              className="navbar-profile-pill desktop-nav-only"
               style={{
-                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 background: 'rgba(255, 255, 255, 0.95)',
                 border: '1.5px solid rgba(203, 213, 225, 0.95)',
-                padding: '3px 8px 3px 3px',
+                padding: '3px',
                 borderRadius: '9999px',
                 boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
                 cursor: 'pointer'
@@ -422,7 +436,7 @@ export default function MainLayout({ children }) {
                   border: '1.5px solid #e11d48'
                 }}
               />
-              <div style={{ textAlign: 'left', lineHeight: 1.1 }} className="desktop-nav-only">
+              <div style={{ textAlign: 'left', lineHeight: 1.1, paddingRight: '6px' }} className="desktop-nav-only">
                 <div style={{ fontSize: '0.76rem', fontWeight: 850, color: '#000000', whiteSpace: 'nowrap' }}>
                   {currentUser?.name?.split(' ')[0] || 'Admin'}
                 </div>
@@ -432,11 +446,11 @@ export default function MainLayout({ children }) {
               </div>
             </button>
 
-            {/* Logout Button */}
+            {/* Logout Button (Desktop only, present in mobile drawer for phones) */}
             <button
               onClick={handleLogout}
+              className="desktop-nav-only"
               style={{
-                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
                 padding: '6px 11px',
@@ -452,7 +466,7 @@ export default function MainLayout({ children }) {
               title="Sign Out of Workspace"
             >
               <LogOut size={13} color="#e11d48" />
-              <span className="desktop-nav-only">Logout</span>
+              <span>Logout</span>
             </button>
 
             {/* Mobile Hamburger Toggle Button */}
@@ -730,6 +744,9 @@ export default function MainLayout({ children }) {
           <span>Menu</span>
         </button>
       </div>
+
+      {/* Background Device Push Notifications Manager */}
+      <PushNotificationManager />
 
       {/* Onboarding Interactive Tour */}
       <InteractiveTour

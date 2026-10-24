@@ -474,7 +474,7 @@ export default function OperationsPage() {
         {/* 5. Department Task Cards Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
           gap: '18px'
         }} className="responsive-grid-3">
           {filteredTasks.length > 0 ? (

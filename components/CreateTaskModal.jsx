@@ -632,7 +632,7 @@ export default function CreateTaskModal({
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                   <Mic size={16} color="#059669" />
-                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#059669' }}>Admin Voice Briefing:</span>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#059669' }}>Voice Briefing:</span>
                   <audio controls src={taskVoice.url} style={{ height: '32px', flex: 1, maxWidth: '280px' }} />
                 </div>
                 <button

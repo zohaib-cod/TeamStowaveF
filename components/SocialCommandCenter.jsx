@@ -974,7 +974,7 @@ export default function SocialCommandCenter() {
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '320px', position: 'relative' }}>
+              <div style={{ flex: 1, minWidth: 'min(100%, 250px)', position: 'relative' }}>
                 <Search size={18} color="#030712" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
@@ -1270,7 +1270,7 @@ export default function SocialCommandCenter() {
           {competitorResult && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Row 1: High Level Metrics & Posting Heatmap */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '18px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '18px' }}>
                 {/* Competitor Overview Card */}
                 <div style={{
                   background: 'rgba(255, 255, 255, 0.88)',
@@ -1363,7 +1363,7 @@ export default function SocialCommandCenter() {
                   <span>Top Performing Videos & Viral Hook Formulas</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
                   {competitorResult.topVideosAndPosts?.map((vid, idx) => (
                     <div
                       key={idx}
@@ -1418,7 +1418,7 @@ export default function SocialCommandCenter() {
                   <Award size={26} color="#e11d48" />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
                   {competitorResult.counterTasks?.map((task, idx) => (
                     <div
                       key={idx}
@@ -1834,7 +1834,7 @@ export default function SocialCommandCenter() {
               </h3>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
               {analytics?.strategicSuggestions?.map(sug => (
                 <div
                   key={sug.id}

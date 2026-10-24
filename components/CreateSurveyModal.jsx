@@ -104,7 +104,7 @@ export default function CreateSurveyModal({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#030712', marginBottom: '6px' }}>Evaluation Target</label>
               <select
@@ -143,9 +143,11 @@ export default function CreateSurveyModal({
             border: '1.5px solid rgba(124, 58, 237, 0.25)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            gap: '10px',
+            flexWrap: 'wrap'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
               <Lock size={18} color="#7c3aed" />
               <div>
                 <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#030712' }}>
@@ -200,18 +202,18 @@ export default function CreateSurveyModal({
             </div>
 
             {/* Add question inline */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <input
                 type="text"
                 value={newQuestionText}
                 onChange={e => setNewQuestionText(e.target.value)}
                 placeholder="Type a new custom question..."
-                style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.86rem', color: '#030712', fontWeight: 550, outline: 'none' }}
+                style={{ flex: '1 1 180px', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.86rem', color: '#030712', fontWeight: 550, outline: 'none' }}
               />
               <select
                 value={newQuestionType}
                 onChange={e => setNewQuestionType(e.target.value)}
-                style={{ width: '130px', padding: '10px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.84rem', color: '#030712', fontWeight: 650, outline: 'none' }}
+                style={{ flex: '1 1 120px', padding: '10px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.84rem', color: '#030712', fontWeight: 650, outline: 'none' }}
               >
                 <option value="rating">Rating (1-5)</option>
                 <option value="text">Text Answer</option>
@@ -219,14 +221,14 @@ export default function CreateSurveyModal({
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                style={{ padding: '8px 16px', borderRadius: '10px', background: '#090d16', color: '#fff', border: 'none', fontSize: '0.82rem', fontWeight: 750, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                style={{ padding: '8px 16px', borderRadius: '10px', background: '#090d16', color: '#fff', border: 'none', fontSize: '0.82rem', fontWeight: 750, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flex: '0 0 auto' }}
               >
                 <Plus size={15} /> Add
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
             <button type="button" onClick={onClose} style={{ padding: '10px 20px', borderRadius: '9999px', background: 'none', border: '1.5px solid #cbd5e1', color: '#030712', fontWeight: 700, cursor: 'pointer' }}>
               Cancel
             </button>

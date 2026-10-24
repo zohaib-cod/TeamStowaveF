@@ -11,7 +11,11 @@ import {
   BarChart2, 
   AlertCircle, 
   X, 
-  Star 
+  Star,
+  MessageSquare,
+  TrendingUp,
+  Users,
+  Award
 } from 'lucide-react';
 
 export default function FeedbackSurveys({
@@ -19,11 +23,26 @@ export default function FeedbackSurveys({
   currentUser,
   onOpenSurveyModal,
   onSubmitResponse,
+  onSubmitSurveyResponse,
   onDeleteSurvey
 }) {
   const isAdmin = currentUser?.role === 'admin';
+  const submitFn = onSubmitResponse || onSubmitSurveyResponse;
   const [activeSurveyModal, setActiveSurveyModal] = useState(null);
+  const [resultsSurveyModal, setResultsSurveyModal] = useState(null);
   const [answers, setAnswers] = useState({});
+
+  const formatDateTime = (isoString) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + 
+        ' at ' + 
+        d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return isoString;
+    }
+  };
 
   const formatRemainingTime = (expiresAt) => {
     const diff = new Date(expiresAt).getTime() - Date.now();
@@ -55,7 +74,15 @@ export default function FeedbackSurveys({
       answer: answers[qId]
     }));
 
-    onSubmitResponse(activeSurveyModal.id, formattedAnswers);
+    const payload = {
+      respondentId: currentUser?.id,
+      respondentName: currentUser?.name,
+      answers: formattedAnswers
+    };
+
+    if (submitFn) {
+      submitFn(activeSurveyModal.id, payload);
+    }
     setActiveSurveyModal(null);
   };
 
@@ -116,7 +143,7 @@ export default function FeedbackSurveys({
       {/* 2. Surveys Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
         gap: '20px'
       }}>
         {surveys.map(survey => {
@@ -205,8 +232,12 @@ export default function FeedbackSurveys({
                   <span style={{ fontSize: '0.76rem', fontWeight: 850, color: '#000000' }}>Questions</span>
                   <div style={{ fontSize: '1rem', fontWeight: 900, color: '#000000' }}>{survey.questions?.length || 0} Items</div>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.76rem', fontWeight: 850, color: '#000000' }}>Submissions</span>
+                <div 
+                  onClick={() => setResultsSurveyModal(survey)}
+                  style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
+                  title="Click to view responses & feedback details"
+                >
+                  <span style={{ fontSize: '0.76rem', fontWeight: 850, color: '#0284c7' }}>Submissions 📊</span>
                   <div style={{ fontSize: '1rem', fontWeight: 900, color: '#064e3b' }}>{survey.responseCount || 0} Received</div>
                 </div>
               </div>
@@ -233,28 +264,53 @@ export default function FeedbackSurveys({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
                 paddingTop: '12px',
                 borderTop: '1px solid rgba(226, 232, 240, 0.95)'
               }}>
-                <button
-                  disabled={isClosed}
-                  onClick={() => handleOpenParticipate(survey)}
-                  style={{
-                    padding: '11px 22px',
-                    borderRadius: '9999px',
-                    background: isClosed ? 'rgba(241, 245, 249, 0.95)' : '#e11d48',
-                    color: isClosed ? '#0f172a' : '#ffffff',
-                    border: isClosed ? '1.5px solid #cbd5e1' : 'none',
-                    fontSize: '0.88rem',
-                    fontWeight: 850,
-                    cursor: isClosed ? 'not-allowed' : 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Send size={15} /> {isClosed ? 'Survey Closed' : 'Participate & Rate'}
-                </button>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    disabled={isClosed}
+                    onClick={() => handleOpenParticipate(survey)}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '9999px',
+                      background: isClosed ? 'rgba(241, 245, 249, 0.95)' : '#e11d48',
+                      color: isClosed ? '#0f172a' : '#ffffff',
+                      border: isClosed ? '1.5px solid #cbd5e1' : 'none',
+                      fontSize: '0.86rem',
+                      fontWeight: 850,
+                      cursor: isClosed ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Send size={14} /> {isClosed ? 'Survey Closed' : 'Participate & Rate'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setResultsSurveyModal(survey)}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '9999px',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: '1.5px solid #0284c7',
+                      color: '#0284c7',
+                      fontSize: '0.86rem',
+                      fontWeight: 850,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.12)'
+                    }}
+                  >
+                    <BarChart2 size={15} /> View Results & Ratings ({survey.responseCount || 0})
+                  </button>
+                </div>
 
                 {isAdmin && (
                   <button
@@ -315,7 +371,7 @@ export default function FeedbackSurveys({
                   </label>
 
                   {q.type === 'rating' ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {[1, 2, 3, 4, 5].map(star => (
                         <button
                           key={star}
@@ -374,6 +430,349 @@ export default function FeedbackSurveys({
           </div>
         </div>
       )}
+
+      {/* 4. Modal: View Survey Results, Ratings & Feedback Comments */}
+      {resultsSurveyModal && (() => {
+        const responses = resultsSurveyModal.responses || [];
+        const questions = resultsSurveyModal.questions || [];
+        
+        // Calculate overall average rating across all rating questions
+        let totalRatingSum = 0;
+        let totalRatingCount = 0;
+        let totalCommentsCount = 0;
+
+        questions.forEach(q => {
+          if (q.type === 'rating') {
+            responses.forEach(r => {
+              const ans = r.answers?.find(a => a.questionId === q.id)?.answer;
+              if (typeof ans === 'number') {
+                totalRatingSum += ans;
+                totalRatingCount++;
+              }
+            });
+          } else {
+            responses.forEach(r => {
+              const ans = r.answers?.find(a => a.questionId === q.id)?.answer;
+              if (ans && typeof ans === 'string' && ans.trim()) {
+                totalCommentsCount++;
+              }
+            });
+          }
+        });
+
+        const overallAverage = totalRatingCount > 0 
+          ? (totalRatingSum / totalRatingCount).toFixed(1) 
+          : null;
+
+        return (
+          <div className="modal-overlay" onClick={() => setResultsSurveyModal(null)}>
+            <div 
+              className="modal-content" 
+              onClick={e => e.stopPropagation()} 
+              style={{
+                background: 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(40px)',
+                borderRadius: '24px',
+                border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                padding: '28px',
+                maxWidth: '750px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 65px rgba(0, 0, 0, 0.22)'
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{
+                      fontSize: '0.74rem',
+                      fontWeight: 850,
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      background: resultsSurveyModal.isAnonymous ? 'rgba(124, 58, 237, 0.12)' : 'rgba(2, 132, 199, 0.12)',
+                      color: resultsSurveyModal.isAnonymous ? '#7c3aed' : '#0284c7'
+                    }}>
+                      {resultsSurveyModal.isAnonymous ? '🔒 100% Anonymous Responses' : '👤 Open Feedback'}
+                    </span>
+                    <span style={{
+                      fontSize: '0.74rem',
+                      fontWeight: 850,
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      background: 'rgba(5, 150, 105, 0.12)',
+                      color: '#059669'
+                    }}>
+                      {responses.length} Submissions Received
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#030712', margin: 0, letterSpacing: '-0.02em' }}>
+                    {resultsSurveyModal.title} — Analytics & Feedback
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.86rem', color: '#64748b', fontWeight: 550 }}>
+                    {resultsSurveyModal.description}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setResultsSurveyModal(null)} 
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#030712', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 3 Top Summary Metric Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
+                gap: '12px',
+                marginBottom: '24px'
+              }}>
+                <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(241, 245, 249, 0.95)', border: '1.5px solid #cbd5e1' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284c7', fontSize: '0.76rem', fontWeight: 800 }}>
+                    <Users size={14} /> Total Respondents
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '4px' }}>
+                    {responses.length}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 650 }}>
+                    Team members contributed
+                  </span>
+                </div>
+
+                <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(254, 243, 199, 0.65)', border: '1.5px solid #fde68a' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b45309', fontSize: '0.76rem', fontWeight: 800 }}>
+                    <Star size={14} fill="#b45309" /> Average Rating
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#92400e', marginTop: '4px' }}>
+                    {overallAverage ? `${overallAverage} / 5.0` : 'N/A'}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#78350f', fontWeight: 650 }}>
+                    {totalRatingCount} ratings recorded
+                  </span>
+                </div>
+
+                <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(236, 253, 245, 0.75)', border: '1.5px solid #a7f3d0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#047857', fontSize: '0.76rem', fontWeight: 800 }}>
+                    <MessageSquare size={14} /> Written Comments
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>
+                    {totalCommentsCount}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#065f46', fontWeight: 650 }}>
+                    Qualitative insights provided
+                  </span>
+                </div>
+              </div>
+
+              {/* Questions Breakdown */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#030712', margin: 0, paddingBottom: '8px', borderBottom: '1.5px solid #e2e8f0' }}>
+                  📋 Detailed Question-by-Question Breakdown & Comments
+                </h4>
+
+                {questions.map((q, qIndex) => {
+                  if (q.type === 'rating') {
+                    const qAnswers = responses
+                      .map(r => ({
+                        rating: r.answers?.find(a => a.questionId === q.id)?.answer,
+                        respondent: r.respondentName,
+                        date: r.submittedAt
+                      }))
+                      .filter(item => typeof item.rating === 'number');
+
+                    const avg = qAnswers.length > 0 
+                      ? (qAnswers.reduce((sum, item) => sum + item.rating, 0) / qAnswers.length).toFixed(1)
+                      : null;
+
+                    // Breakdown counts for 5, 4, 3, 2, 1
+                    const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                    qAnswers.forEach(item => {
+                      if (starCounts[item.rating] !== undefined) starCounts[item.rating]++;
+                    });
+
+                    return (
+                      <div key={q.id} style={{
+                        padding: '18px 20px',
+                        borderRadius: '16px',
+                        background: '#ffffff',
+                        border: '1.5px solid #e2e8f0',
+                        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                          <div style={{ flex: 1, minWidth: '240px' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#e11d48', textTransform: 'uppercase' }}>
+                              Question {qIndex + 1} • Star Rating
+                            </span>
+                            <h5 style={{ fontSize: '0.98rem', fontWeight: 850, color: '#0f172a', margin: '4px 0 0' }}>
+                              {q.text}
+                            </h5>
+                          </div>
+
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#fef3c7',
+                            padding: '6px 14px',
+                            borderRadius: '999px',
+                            border: '1px solid #fde68a'
+                          }}>
+                            <Star size={16} fill="#d97706" color="#d97706" />
+                            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#92400e' }}>
+                              {avg ? `${avg} / 5.0` : 'No ratings yet'}
+                            </span>
+                            <span style={{ fontSize: '0.74rem', color: '#b45309', fontWeight: 700 }}>
+                              ({qAnswers.length} responses)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Star Distribution Visual Bars */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                          {[5, 4, 3, 2, 1].map(star => {
+                            const count = starCounts[star] || 0;
+                            const percentage = qAnswers.length > 0 ? Math.round((count / qAnswers.length) * 100) : 0;
+                            return (
+                              <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.78rem' }}>
+                                <span style={{ width: '45px', fontWeight: 800, color: '#475569', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                  {star} <Star size={11} fill="#f59e0b" color="#f59e0b" />
+                                </span>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                                  <div style={{
+                                    width: `${percentage}%`,
+                                    height: '100%',
+                                    background: star >= 4 ? '#059669' : (star === 3 ? '#f59e0b' : '#ef4444'),
+                                    borderRadius: '999px',
+                                    transition: 'width 0.3s ease'
+                                  }} />
+                                </div>
+                                <span style={{ width: '60px', textAlign: 'right', fontWeight: 750, color: '#0f172a' }}>
+                                  {count} ({percentage}%)
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Individual Ratings List */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {qAnswers.map((item, i) => (
+                            <span key={i} style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              background: '#f1f5f9',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.74rem',
+                              fontWeight: 750,
+                              color: '#1e293b'
+                            }}>
+                              <span>{item.respondent}:</span>
+                              <span style={{ color: '#b45309', fontWeight: 850 }}>⭐ {item.rating}/5</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Text / Comments question
+                    const qComments = responses
+                      .map(r => ({
+                        text: r.answers?.find(a => a.questionId === q.id)?.answer,
+                        respondent: r.respondentName,
+                        date: r.submittedAt
+                      }))
+                      .filter(item => item.text && typeof item.text === 'string' && item.text.trim());
+
+                    return (
+                      <div key={q.id} style={{
+                        padding: '18px 20px',
+                        borderRadius: '16px',
+                        background: '#ffffff',
+                        border: '1.5px solid #e2e8f0',
+                        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)'
+                      }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
+                            Question {qIndex + 1} • Written Feedback & Comments
+                          </span>
+                          <h5 style={{ fontSize: '0.98rem', fontWeight: 850, color: '#0f172a', margin: '4px 0 0' }}>
+                            {q.text}
+                          </h5>
+                          <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700 }}>
+                            {qComments.length} comments submitted
+                          </span>
+                        </div>
+
+                        {qComments.length === 0 ? (
+                          <div style={{ padding: '16px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '0.82rem', fontWeight: 650 }}>
+                            No written comments provided for this question yet.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {qComments.map((comment, cIdx) => (
+                              <div key={cIdx} style={{
+                                padding: '12px 14px',
+                                borderRadius: '12px',
+                                background: 'rgba(241, 245, 249, 0.85)',
+                                border: '1px solid #cbd5e1'
+                              }}>
+                                <p style={{ margin: 0, fontSize: '0.88rem', color: '#030712', fontWeight: 650, lineHeight: 1.5 }}>
+                                  "{comment.text}"
+                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>
+                                  <span style={{ color: resultsSurveyModal.isAnonymous ? '#7c3aed' : '#0284c7', fontWeight: 800 }}>
+                                    {comment.respondent}
+                                  </span>
+                                  <span>{formatDateTime(comment.date)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                })}
+
+                {responses.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', background: '#f8fafc', borderRadius: '16px', border: '1.5px dashed #cbd5e1' }}>
+                    <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 850, color: '#0f172a' }}>
+                      Abhi tak kisi team member ne is survey may participate nahi kiya.
+                    </p>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
+                      Jaise hi team members survey fill karenge, unke ratings aur written comments yahan foran live show honge.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Close Button Footer */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setResultsSurveyModal(null)}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '9999px',
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close Results
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

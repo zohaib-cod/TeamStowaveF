@@ -226,7 +226,9 @@ function InviteContent() {
         </h2>
         <p style={{ margin: '6px 0 0', fontSize: '0.86rem', color: '#64748b', fontWeight: 600 }}>
           Invited by <strong>{inviteData?.invitedByName || 'Stowave Leadership'}</strong> as{' '}
-          <span style={{ textTransform: 'uppercase', color: '#e11d48', fontWeight: 800 }}>{inviteData?.role}</span>
+          <span style={{ textTransform: 'uppercase', color: '#e11d48', fontWeight: 800 }}>
+            {inviteData?.role === 'master_admin' ? '👑 Master Admin (Executive Director)' : inviteData?.role}
+          </span>
         </p>
 
         {inviteData?.department && (

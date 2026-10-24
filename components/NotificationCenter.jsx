@@ -18,8 +18,16 @@ export default function NotificationCenter({ currentUser }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef(null);
   const prevUnreadCountRef = useRef(0);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Helper: Play gentle notification sound using Web Audio API synthesis
   const playNotificationChime = () => {
@@ -226,18 +234,19 @@ export default function NotificationCenter({ currentUser }) {
       {/* Floating Popover Dropdown (LinkedIn / WhatsApp style) */}
       {isOpen && (
         <div style={{
-          position: 'absolute',
-          top: '46px',
-          right: '-10px',
-          width: '380px',
-          maxWidth: '92vw',
-          maxHeight: '520px',
+          position: isMobile ? 'fixed' : 'absolute',
+          top: isMobile ? '70px' : '46px',
+          right: isMobile ? '12px' : '-10px',
+          left: isMobile ? '12px' : 'auto',
+          width: isMobile ? 'auto' : '380px',
+          maxWidth: isMobile ? 'calc(100vw - 24px)' : '92vw',
+          maxHeight: isMobile ? '70vh' : '520px',
           background: 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(36px)',
           borderRadius: '20px',
           border: '1.5px solid rgba(226, 232, 240, 0.95)',
           boxShadow: '0 20px 50px rgba(15, 23, 42, 0.22)',
-          zIndex: 1200,
+          zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

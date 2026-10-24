@@ -229,7 +229,7 @@ export default function InviteUserModal({ isOpen, onClose, currentUser }) {
     e.preventDefault();
     if (!email) return;
 
-    if (selectedTasks.length === 0) {
+    if (role !== 'master_admin' && selectedTasks.length === 0) {
       setError('Barah-e-karam kam az kam aik kaam ya department zaroor select karein.');
       return;
     }
@@ -238,7 +238,7 @@ export default function InviteUserModal({ isOpen, onClose, currentUser }) {
     setSuccessInfo(null);
     setIsLoading(true);
 
-    const finalDepartment = selectedTasks.join(', ');
+    const finalDepartment = selectedTasks.length > 0 ? selectedTasks.join(', ') : 'Executive Leadership & Final Sign-off';
 
     try {
       const res = await fetch('/api/auth/invite', {
@@ -412,11 +412,42 @@ export default function InviteUserModal({ isOpen, onClose, currentUser }) {
             <select
               className="select-field"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => {
+                const newRole = e.target.value;
+                setRole(newRole);
+                if (newRole === 'master_admin') {
+                  setSelectedTasks([
+                    'Budget Authorizations & Major Expenditure Approvals',
+                    'Ad Campaigns, Creative Assets & Discount Sign-off',
+                    'Notebook Operational Procedure & Authorization'
+                  ]);
+                }
+              }}
             >
               <option value="member">👤 Member (Team Contributor)</option>
-              <option value="admin">👑 Admin (Full Operations Director)</option>
+              <option value="admin">🛡️ Admin (Operations Administrator)</option>
+              <option value="master_admin">👑 Master Admin (Executive Director & Final Sign-off Authority)</option>
             </select>
+            {role === 'master_admin' && (
+              <div style={{
+                marginTop: '8px',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.95), rgba(253, 230, 138, 0.9))',
+                border: '1.5px solid rgba(217, 119, 6, 0.35)',
+                fontSize: '0.78rem',
+                color: '#92400e',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Sparkles size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Executive Master Admin:</strong> Is email py 30-minute secure link bheja jaye ga. Link click kr k account banany k baad unhein tamam tasks ki final review, approval, rejection aur bonus gifting k full powers milen gy.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Multi-Task Responsibilities Selector (Hur Kaam Alug Alug) */}

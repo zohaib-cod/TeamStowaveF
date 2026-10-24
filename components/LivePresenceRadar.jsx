@@ -133,7 +133,8 @@ export default function LivePresenceRadar({ currentUser }) {
       if (currentUser?.id) {
         const payload = JSON.stringify({ userId: currentUser.id });
         if (navigator.sendBeacon) {
-          navigator.sendBeacon('/api/presence/leave', payload);
+          const blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon('/api/presence/leave', blob);
         } else {
           fetch('/api/presence/leave', {
             method: 'POST',
@@ -153,6 +154,15 @@ export default function LivePresenceRadar({ currentUser }) {
     };
   }, [currentUser?.id, pathname]);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const onlineCount = Math.max(presenceData.onlineCount || 0, currentUser ? 1 : 0);
 
   return (
@@ -167,14 +177,15 @@ export default function LivePresenceRadar({ currentUser }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '7px',
-          padding: '5px 12px',
+          gap: '6px',
+          padding: '5px 10px',
           borderRadius: '9999px',
           background: isOpen ? '#059669' : 'rgba(255, 255, 255, 0.95)',
           border: isOpen ? '1.5px solid #059669' : '1.5px solid rgba(203, 213, 225, 0.95)',
           boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)',
           cursor: 'pointer',
-          transition: 'all 0.16s ease'
+          transition: 'all 0.16s ease',
+          flexShrink: 0
         }}
         title="View live active users crawling the platform"
       >
@@ -185,15 +196,16 @@ export default function LivePresenceRadar({ currentUser }) {
         <Eye size={13} color={isOpen ? '#ffffff' : '#059669'} />
       </button>
 
-      {/* 2. Anchored Popover Dropdown */}
+      {/* 2. Anchored Popover Dropdown (Clamped to viewport on mobile) */}
       {isOpen && (
         <div
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            left: 0,
-            width: '400px',
-            maxWidth: 'calc(100vw - 32px)',
+            position: isMobile ? 'fixed' : 'absolute',
+            top: isMobile ? '70px' : 'calc(100% + 10px)',
+            left: isMobile ? '12px' : 0,
+            right: isMobile ? '12px' : 'auto',
+            width: isMobile ? 'auto' : '400px',
+            maxWidth: isMobile ? 'calc(100vw - 24px)' : 'calc(100vw - 32px)',
             background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(36px)',
             WebkitBackdropFilter: 'blur(36px)',
@@ -202,7 +214,7 @@ export default function LivePresenceRadar({ currentUser }) {
             boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.04)',
             padding: '16px 18px',
             zIndex: 9999,
-            maxHeight: '440px',
+            maxHeight: isMobile ? '70vh' : '440px',
             overflowY: 'auto'
           }}
         >
